@@ -157,12 +157,14 @@ void daemonize(const char *cmd)
     }
 }
 
+//extern char **environ;
 int main(int argc, char *argv[])
 {
     int err;
     pthread_t tid;
     char* cmd;
     struct sigaction sa;
+    pid_t pid;
     
     if((cmd = strrchr(argv[0], '/')) == NULL)
         cmd = argv[0];
@@ -193,37 +195,60 @@ int main(int argc, char *argv[])
     struct sockaddr_in server_addr, client_addr;
     socklen_t clientlen = sizeof(client_addr);
     char buf[256];
-    int sd, ns;
+    int halfsd, fullsd;
 
     memset((char *)&server_addr, '\0', sizeof(server_addr));
     server_addr.sin_family = PF_INET;
-    server_addr.sin_port = htons(9000);
+    server_addr.sin_port = htons(9002);
     server_addr.sin_addr.s_addr = inet_addr("127.0.0.1");
 
-    if((sd = socket(AF_INET, SOCK_STREAM, 0)) == -1) {
+    if((halfsd = socket(AF_INET, SOCK_STREAM, 0)) == -1) {
         syslog(LOG_ERR, "can't create socket");
         exit(1);
     }
-    if(bind(sd, (struct sockaddr *)&server_addr, sizeof(server_addr))){
+    if(bind(halfsd , (struct sockaddr *)&server_addr, sizeof(server_addr))){
         syslog(LOG_ERR, "can't bind socket");
         exit(1);
     }
-    if(listen(sd,5)){
+    if(listen(halfsd,5)){
         syslog(LOG_ERR, "can't listen");
         exit(1);
     }
+    //////network programming end/////
+   /* char **new_argv;
+    char command[] = "./test";
+    new_argv = (char **)malloc(sizeof(char *) * 2);
 
-    if((ns = accept(sd, (struct sockaddr *)&client_addr, &clientlen)) == -1){
-        syslog(LOG_ERR, "accept");
-        exit(1);
-    }
-
-    //////////////main///////////////
+    new_argv[0] = command;
+    new_argv[1] = NULL;
+*/
     while(1){
-        if(recv(ns, buf, sizeof(buf), 0) > 0){
-            syslog(LOG_ERR, "recv str: %s\n", buf);
+        if((fullsd = accept(halfsd, (struct sockaddr *)&client_addr, &clientlen)) == -1){
+            syslog(LOG_ERR, "accept");
             exit(1);
         }
+        else if(fullsd > 0)
+        {
+            pid = fork();
+            if(pid == -1){
+                syslog(LOG_ERR, "can't fork\n");
+                exit(1);
+            }
+            else if(pid == 0){//vcsd exec
+                syslog(LOG_ERR, "executing VCS\n");
+                close(fullsd);
+                close(halfsd);
+//                if(execve("/home/rubicom/vcsd/test", new_argv, environ) == -1)
+                {
+                //execl("/home/rubicom/vcsd/test", "./test", "", NULL);
+                execl("/home/rubicom/Ichthus/ichthus/vehicle/control_server/VCFserver_pc.exe", "./VCFserver_pc.exe", "", NULL);
+                syslog(LOG_ERR, "execl failed to run VCS\n");
+                }
+            }
+            else close(fullsd);
+            
+        }
     }
+    close(halfsd);
     exit(0);
 }
