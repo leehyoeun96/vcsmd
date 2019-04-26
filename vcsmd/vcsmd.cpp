@@ -241,7 +241,7 @@ int main(int argc, char *argv[])
 //                if(execve("/home/rubicom/vcsd/test", new_argv, environ) == -1)
                 {
                 //execl("/home/rubicom/vcsd/test", "./test", "", NULL);
-                execl("/home/rubicom/Ichthus/ichthus/vehicle/control_server/VCFserver_pc.exe", "./VCFserver_pc.exe", "", NULL);
+                execl("~/vcsd/vcs/VCFserver_pc.exe", "./VCFserver_pc.exe", "", NULL);
                 syslog(LOG_ERR, "execl failed to run VCS\n");
                 }
             }
