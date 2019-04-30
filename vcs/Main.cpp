@@ -9,10 +9,14 @@
 #include <stdio.h>
 #include <iostream>
 #include <syslog.h>//added by hyo
-
+#include <fcntl.h>//added by hyo
 //#include "vthread.h"
 #include "socketprogram.h"
 #include "hybridautomata.h"
+
+#define LOCKFILE "/var/run/vcsd.pid"
+#define LOCKMODE (S_IRUSR|S_IWUSR|S_IRGRP|S_IROTH)
+
 
 using namespace std;
 
@@ -97,6 +101,45 @@ void shutDown()
     //myFlush();
     exit(0);
 }
+
+int lockfile(int fd)//added by hyo//
+{
+    struct flock fl;
+    fl.l_type = F_WRLCK;
+    fl.l_start = 0;
+    fl.l_whence = SEEK_SET;
+    fl.l_len = 0;
+    return(fcntl(fd, F_SETLK, &fl));
+}
+
+int already_running(void)//added by hyo//
+{
+    int fd;
+    char buf[16];
+
+    fd = open(LOCKFILE, O_RDWR|O_CREAT, LOCKMODE);
+    if(fd < 0)
+    {
+        syslog(LOG_ERR, "can't open %s: %s", LOCKFILE, strerror(errno));
+        exit(1);
+    }
+    if(lockfile(fd)<0)
+    {
+        if(errno == EACCES || errno == EAGAIN)
+        {
+            close(fd);
+            return(1);
+        }
+        syslog(LOG_ERR, "can't lock %s: %s", LOCKFILE, strerror(errno));
+        exit(1);
+    }
+    ftruncate(fd, 0);
+    sprintf(buf, "%ld", (long)getpid());
+    write(fd, buf, strlen(buf)+1);
+    return(0);
+}
+
+
 void signalHandler(int signo)
 {
     if ((signo = !SIGINT) || (signo = !SIGTERM))
@@ -107,21 +150,31 @@ void signalHandler(int signo)
     shutDown();
     exit(0);
 }
-
+//added by hyo
+typedef struct message
+{
+    int seq_no;
+    int ack_no;
+    int cmd_code;//0 means get / 1 means set
+    int param_id;//0 means target velocity/ 1 means target omega//temporally
+    double param_val;//used as reply for get
+    int result_code;//result of cmd(0 means success)
+    string result_msg;//infor/warning/error msg
+} msg;
 
 void *RecvHandler(void *arg)
 {
     int client_idx = *(int *)arg;
     int sockfd = get_sockfd(client_idx);
     int bytecount = 0;
-    double buffer[2];
+    double buffer[10];//modified by hyo
 
-    printf("what?1\n");
-    syslog(LOG_ERR,"what?1\n");
+    msg packet;
+
     printf("sockfd %d\n", sockfd);
     while (1)
     {  
-        if ((bytecount = recv(sockfd, buffer, 2 * __SIZEOF_DOUBLE__, MSG_WAITALL)) == -1)
+        if ((bytecount = recv(sockfd, &packet , sizeof(packet), MSG_WAITALL)) == -1)//modified by hyo
         {
             fprintf(stderr, "Error receiving data %d\n", errno);
         }
@@ -138,9 +191,29 @@ void *RecvHandler(void *arg)
         //set_rtParam("Current_Velocity","timestamp",++timestamp);
 
         //set_rtParam("Current_Velocity","value",buffer[2]);
-        set_rtParam("SteerControl.target_angle", "value", buffer[1]);
-        set_rtParam("CruiseControl.target_velocity", "value", buffer[0]);
+        //set_rtParam("SteerControl.target_angle", "value", buffer[1]);
+        //set_rtParam("CruiseControl.target_velocity", "value", buffer[0]);
+        
+        if(packet.cmd_code)
+        {
+            switch(packet.param_id)
+            {
+                case 0:
+                    set_rtParam("SteerControl.target_angle", "value", packet.param_val);
+                    syslog(LOG_ERR,"SteerControl.target_angle");
+                    break;
+                case 1:
+                    set_rtParam("CruiseControl.target_velocity", "value", packet.param_val);
+                    syslog(LOG_ERR,"CruiseControl.target_velocity");
+                    break;
+                default:
+                    syslog(LOG_ERR,"can't set param");
+                    break;
+            }
+        }
     }
+    printf("what?\n");
+    pthread_exit((void *)2);
 }
 void createThreads(int client_idx)
 {
@@ -152,11 +225,10 @@ void createThreads(int client_idx)
             printf("error: pthread_create_recv(): %s\n", strerror(errno));
             shutDown();
         }
+            pthread_detach(&recv_thread[num_of_clients]);
     }
     if (is_first_connection)
     {
-        printf("what?2\n");
-        syslog(LOG_ERR,"what?2\n");
         if (pthread_create(&read_thread, NULL, &read_thread_handler, (void *)&client_idx) < 0)
         {
             printf("error: pthread_create_read(): %s\n", strerror(errno));
@@ -176,7 +248,6 @@ void createThreads(int client_idx)
 
 int main(int argc, char *argv[])
 {
-
     sigset_t waitmask;
     int c, flag_help = 0;
     struct in_addr server_ip;
@@ -191,7 +262,13 @@ int main(int argc, char *argv[])
     if((cmd = strrchr(argv[0], '/')) == NULL)
         cmd = argv[0];
     else cmd++;
-    openlog(cmd, LOG_CONS, LOG_DAEMON); 
+    openlog(cmd, LOG_CONS, LOG_DAEMON);
+
+    if(already_running()){
+        syslog(LOG_ERR, "daemon already running");
+        exit(1);
+    }
+
     //------------//
     while ((c = getopt(argc, argv, "hi:p:")) != -1)
     {
@@ -218,7 +295,7 @@ int main(int argc, char *argv[])
         exit(1);
     }
 
-    readVehicleConfigs("/home/rubicom/Ichthus/ichthus/vehicle/control_server/vehicle/i30.xml");
+    readVehicleConfigs("/home/rubicom/vcsd/vcs/vehicle/i30.xml");
     syslog(LOG_ERR,"Connect client? : %d\n", get_cfParam("Main.use_socket"));
     if (signal(SIGINT, signalHandler) == SIG_ERR)
     {
@@ -254,16 +331,14 @@ int main(int argc, char *argv[])
         while (1)
         {
             socklen_t len = sizeof(sockaddr);
-
-            syslog(LOG_ERR, "error : before accept() : %s\n", strerror(errno));//added by hyo
             fullsd = accept(halfsd, (struct sockaddr *)&sockaddr, &len);
             if (fullsd < 0)
             {
-                syslog(LOG_ERR, "error : return accept() : %s\n", strerror(errno));//added by hyo
+                syslog(LOG_ERR, "error : %s\n", strerror(errno));//added by hyo
                 shutDown();
                 break;
             }
-           syslog(LOG_ERR, "Connected\n");//added by hyo
+            syslog(LOG_ERR, "Connected\n");//added by hyo
             printf("Connected\n");
 
             if (num_of_clients == MAX_CLIENTS)

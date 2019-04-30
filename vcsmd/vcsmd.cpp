@@ -8,6 +8,7 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <sys/socket.h>
+#include <sys/wait.h>
 #include <unistd.h>
 #include <arpa/inet.h>
 #include <pthread.h>
@@ -16,7 +17,7 @@
 #include <stdarg.h>
 #include <errno.h>
 
-#define LOCKFILE "/var/run/daemon.pid"
+#define LOCKFILE "/var/run/vcsmd.pid"
 #define LOCKMODE (S_IRUSR|S_IWUSR|S_IRGRP|S_IROTH)
 sigset_t mask;
 
@@ -60,11 +61,11 @@ int already_running(void)
 void err_quit(const char *fmt, ...){
     va_list ap;
     va_start(ap, fmt);
-//    err_doit(0, fmt, ap);
+    //    err_doit(0, fmt, ap);
     va_end(ap);
     exit(1);
 }
-
+/*
 void reread(void) {}
 
 void* thr_fn(void *arg)
@@ -93,7 +94,7 @@ void* thr_fn(void *arg)
     }
     return(0);
 }
-
+*/
 void daemonize(const char *cmd)
 {
     int i, fd0, fd1, fd2;
@@ -164,8 +165,6 @@ int main(int argc, char *argv[])
     pthread_t tid;
     char* cmd;
     struct sigaction sa;
-    pid_t pid;
-    
     if((cmd = strrchr(argv[0], '/')) == NULL)
         cmd = argv[0];
     else cmd++;
@@ -183,14 +182,14 @@ int main(int argc, char *argv[])
     sa.sa_flags = 0;
     if(sigaction(SIGHUP, &sa, NULL) < 0)
         syslog(LOG_ERR, "%s: can't restore SIGHUP default",cmd);
-    sigfillset(&mask);
+   /* sigfillset(&mask);
     if((err = pthread_sigmask(SIG_BLOCK, &mask, NULL)) != 0)
         syslog(LOG_ERR, "SIG_BLOCK error");
 
     err = pthread_create(&tid, NULL, thr_fn, 0);
     if(err != 0)
         syslog(LOG_ERR, "can't create thread");
-    
+    */
     //////network programming////////
     struct sockaddr_in server_addr, client_addr;
     socklen_t clientlen = sizeof(client_addr);
@@ -215,21 +214,29 @@ int main(int argc, char *argv[])
         exit(1);
     }
     //////network programming end/////
-   /* char **new_argv;
-    char command[] = "./test";
-    new_argv = (char **)malloc(sizeof(char *) * 2);
+    char hup_cmd[11];
+    strcpy(hup_cmd,"kill -HUP ");
+    char pid_buf[10];
+    pid_t pid = 0;
 
-    new_argv[0] = command;
-    new_argv[1] = NULL;
-*/
-    while(1){
+   while(1){
         if((fullsd = accept(halfsd, (struct sockaddr *)&client_addr, &clientlen)) == -1){
             syslog(LOG_ERR, "accept");
             exit(1);
         }
         else if(fullsd > 0)
         {
+            if(pid != 0) 
+            {
+                sprintf(pid_buf, "%d", pid);
+                strcat(hup_cmd,pid_buf);
+                system(hup_cmd);
+                waitpid(pid, NULL, 0);
+                syslog(LOG_ERR, hup_cmd);
+                syslog(LOG_ERR, "VCSD already running! killing...\n");
+            }
             pid = fork();
+
             if(pid == -1){
                 syslog(LOG_ERR, "can't fork\n");
                 exit(1);
@@ -238,15 +245,11 @@ int main(int argc, char *argv[])
                 syslog(LOG_ERR, "executing VCS\n");
                 close(fullsd);
                 close(halfsd);
-//                if(execve("/home/rubicom/vcsd/test", new_argv, environ) == -1)
-                {
                 //execl("/home/rubicom/vcsd/test", "./test", "", NULL);
-                execl("~/vcsd/vcs/VCFserver_pc.exe", "./VCFserver_pc.exe", "", NULL);
+                execl("home/rubicom/vcsd/vcs/VCFserver_pc.exe", "./VCFserver_pc.exe", "", NULL);
                 syslog(LOG_ERR, "execl failed to run VCS\n");
-                }
             }
             else close(fullsd);
-            
         }
     }
     close(halfsd);

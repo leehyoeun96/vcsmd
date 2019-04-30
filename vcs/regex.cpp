@@ -330,8 +330,6 @@ void print_string(char *p)
 #include <syslog.h>
 void read_thread_handler(void *arg)
 {
-    printf("what?3\n");
-    syslog(LOG_ERR,"what?3\n");
     char buf[MAX_BUFFER], buffer[MAX_BUFFER];
     //int sockfd = *((int *)arg);
     int nread, nconsumed, totread = 0;

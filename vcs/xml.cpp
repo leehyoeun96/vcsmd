@@ -1154,13 +1154,13 @@ void printConfigs() // qjin : need to write instruction
     strcpy(cmd, "VCF");
 
     openlog(cmd, LOG_CONS, LOG_DAEMON);
-    syslog(LOG_ERR, "\n****************************************************\n**\n");
+    /*syslog(LOG_ERR, "\n****************************************************\n**\n");
     for (i = cfParam.begin(); i != cfParam.end(); ++i)
     {
         syslog(LOG_ERR,"**   %s = %d\n", i->first ,i->second);
     }
     syslog(LOG_ERR, "\n****************************************************\n**\n");
-
+    */
     cout << "\n****************************************************\n**" << endl;
     for (i = cfParam.begin(); i != cfParam.end(); ++i)
     {
