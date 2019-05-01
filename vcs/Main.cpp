@@ -10,15 +10,12 @@
 #include <iostream>
 #include <syslog.h>//added by hyo
 #include <fcntl.h>//added by hyo
-//#include "vthread.h"
+#include "vthread.h"//namespace std is here
 #include "socketprogram.h"
 #include "hybridautomata.h"
-
 #define LOCKFILE "/var/run/vcsd.pid"
 #define LOCKMODE (S_IRUSR|S_IWUSR|S_IRGRP|S_IROTH)
 
-
-using namespace std;
 
 extern int readVehicleConfigs(char *xml_file); // from xml.cpp
 extern int get_cfParam(char *name);            // from GlobalParam.cpp
@@ -35,16 +32,16 @@ extern void obdDown();
 
 pthread_t recv_thread[MAX_CLIENTS];
 pthread_t read_thread;
-//VThread *send_thread[MAX_CLIENTS]={NULL};
+VThread *send_thread[MAX_CLIENTS]={NULL};
 //VThread *EM_thread;
 
 bool is_first_connection = true;
 int num_of_clients = 0;
 int client_idx;
-/*void exitHandler(VThread *t)
+void exitHandler(VThread *t)
 {
     cout << t->get_thread_name() << " terminated" << endl;
-}*/
+}
 void myFlush()
 {
     while (getchar() != '\n')
@@ -93,7 +90,7 @@ void shutDown()
 
     while (idx < num_of_clients)
     {
-        //delete send_thread[idx]; send_thread[idx]=NULL;
+        delete send_thread[idx]; send_thread[idx]=NULL;
         idx++;
     }
    
@@ -150,8 +147,7 @@ void signalHandler(int signo)
     shutDown();
     exit(0);
 }
-//added by hyo
-typedef struct message
+/*typedef struct message //added by hyo
 {
     int seq_no;
     int ack_no;
@@ -161,7 +157,21 @@ typedef struct message
     int result_code;//result of cmd(0 means success)
     string result_msg;//infor/warning/error msg
 } msg;
-
+*/
+void SendHandler(VThread *t, ThreadMsg *msg)
+{
+    syslog(LOG_ERR,"Send Handler create!\n");
+    const UserMsg *packet = static_cast<const UserMsg*>(msg->msg);
+    
+    for(int i=0; i<num_of_clients; ++i)
+    {
+        if(write(clients[i].sockfd, packet, sizeof(*packet)) < 0)
+        {
+            cout << t->get_thread_name() << ": " << strerror(errno) << endl;
+            kill(getpid(), SIGINT);
+        }
+    }
+}
 void *RecvHandler(void *arg)
 {
     int client_idx = *(int *)arg;
@@ -169,14 +179,16 @@ void *RecvHandler(void *arg)
     int bytecount = 0;
     double buffer[10];//modified by hyo
 
-    msg packet;
+    UserMsg *packet = new UserMsg;
+    //UserMsg *packet = static_cast<const UserMsg*>UserMsg();
 
     printf("sockfd %d\n", sockfd);
     while (1)
     {  
-        if ((bytecount = recv(sockfd, &packet , sizeof(packet), MSG_WAITALL)) == -1)//modified by hyo
+        if ((bytecount = recv(sockfd, packet , sizeof(*packet), MSG_WAITALL)) == -1)//modified by hyo
         {
             fprintf(stderr, "Error receiving data %d\n", errno);
+            syslog(LOG_ERR, "Error receiving data %d\n", errno);
         }
         else if (bytecount == 0)
         {
@@ -194,16 +206,20 @@ void *RecvHandler(void *arg)
         //set_rtParam("SteerControl.target_angle", "value", buffer[1]);
         //set_rtParam("CruiseControl.target_velocity", "value", buffer[0]);
         
-        if(packet.cmd_code)
+        syslog(LOG_ERR,"packet->cmd_code :%d", packet->cmd_code);//added by hyo
+        
+        if(packet->cmd_code)
         {
-            switch(packet.param_id)
+            switch(packet->param_id)
             {
                 case 0:
-                    set_rtParam("SteerControl.target_angle", "value", packet.param_val);
+                    set_rtParam("SteerControl.target_angle", "value", packet->param_val);
                     syslog(LOG_ERR,"SteerControl.target_angle");
+                    printf("client_idx: %d\n",client_idx);
+                    send_thread[client_idx]->PostMsg((const UserMsg*)packet);
                     break;
                 case 1:
-                    set_rtParam("CruiseControl.target_velocity", "value", packet.param_val);
+                    set_rtParam("CruiseControl.target_velocity", "value", packet->param_val);
                     syslog(LOG_ERR,"CruiseControl.target_velocity");
                     break;
                 default:
@@ -353,13 +369,16 @@ int main(int argc, char *argv[])
             client_idx = findClientByID(num_of_clients);
 
             createThreads(client_idx);
-            //send_thread[num_of_clients] = new VThread("send_thread", num_of_clients, Proto_SendHandler, exitHandler);
-            //send_thread[num_of_clients]->CreateThread();
-
+            printf("main client_idx : %d\n", client_idx);
+            send_thread[client_idx] = new VThread("send_thread", client_idx, SendHandler, exitHandler);
+            send_thread[client_idx]->CreateThread();
+            /*send_thread[num_of_clients] = new VThread("send_thread", num_of_clients, SendHandler, exitHandler);
+            send_thread[num_of_clients]->CreateThread();
+*/
             //parsing_thread->PostOperationalMsg((const Operational_msg *)umsg);
             //
-
-            /*if (pthread_create(&send_thread_id[num_of_clients], NULL, &SendHandler, (void *)&client_idx) < 0)
+            /*
+            if (pthread_create(&send_thread_id[num_of_clients], NULL, &SendHandler, (void *)&client_idx) < 0)
             {
                 printf("error: pthread_create(): %s\n", strerror(errno));
                 shutDown();
@@ -407,7 +426,9 @@ int main(int argc, char *argv[])
                 pthread_detach(ecat_cyclic_thread_id);
             ch = getchar();
             slave_info[0].target_pos = 10000;
-            while (1)
+      edMsg* threadMsg = new ThreadMsg(MSG_POST_USER_MSG,0,data);
+      157     cout<<"threadMsg created"<<endl;
+      while (1)
             {
             //
             // printf("4->");

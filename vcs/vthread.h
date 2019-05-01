@@ -7,13 +7,21 @@
 #include <queue>
 #include <mutex>
 #include <condition_variable>
-#include <iostream>
+//#include <iostream>
 #include "fault.h"
 //#include "umsg.pb.h"
+#include "umsg.h"//added by hyo
 
-using namespace std;
 //using namespace vcf;
-
+/*
+struct UserMsg {
+    UserMsg() { arg1 = 0; arg2 = 0;}
+    UserMsg(int a1, int a2, char *s) {arg1 = a1; arg2 = a2; msg = string(s); }
+    int arg1;
+    int arg2;
+    string msg;
+};//added by hyo
+*/
 struct ThreadMsg 
 {
   ThreadMsg(int i, int type, const void* m) { id = i; msgType=type; msg = m; }
@@ -53,10 +61,12 @@ class VThread
 
   /// Add a message to thread queue. 
   /// @param[in] data - thread specific information created on the heap using operator new.
-  void PostInitialMsg(const Initial_msg* data);
+ /* void PostInitialMsg(const Initial_msg* data);
   void PostInitialPrmMsg(const Initial_msg* data);
   void PostInitialCmdMsg(const Initial_msg* data);
   void PostOperationalMsg(const Operational_msg* data);
+*/
+  void PostMsg(const UserMsg* data);//added by hyo
 
   /// added by khkim
   const char* get_thread_name() { return thread_name; }
@@ -82,9 +92,10 @@ class VThread
 
 
 #define MSG_EXIT_THREAD			1
-#define MSG_POST_Initial_MSG		2
+#define MSG_POST_USER_MSG	    2
+/*#define MSG_POST_Initial_MSG		2
 #define MSG_POST_Operational_MSG        3
-
+*/
 VThread::VThread(const char* threadName,int clientid,
 		 void (*func1)(VThread *, ThreadMsg *),
 		 void (*func2)(VThread *)) 
@@ -102,8 +113,8 @@ bool VThread::CreateThread()
 {
   if (!m_thread)
   {
-      cout<<"thread create!!"<<endl;
-    m_thread = new thread(&VThread::Process, this);
+      m_thread = new thread(&VThread::Process, this);
+      cout << "thread create!!" <<m_thread<<endl;
   }
   return true;
 }
@@ -137,6 +148,22 @@ void VThread::ExitThread()
   m_thread = 0;
 }
 
+void VThread::PostMsg(const UserMsg* data)
+{
+    cout << "PostMSg()" <<m_thread<<endl;
+    ASSERT_TRUE(m_thread);
+    cout<<"PostMsg()called"<<endl;
+    ThreadMsg* threadMsg = new ThreadMsg(MSG_POST_USER_MSG,0,data);
+    cout<<"threadMsg created"<<endl;
+
+    // Add user data msg to queue and notify worker thread
+    std::unique_lock<std::mutex> lk(m_mutex);
+    m_queue.push(threadMsg);
+    m_cv.notify_one();
+}
+
+
+/*
 void VThread::PostInitialMsg(const Initial_msg* data)
 {
     ASSERT_TRUE(m_thread);
@@ -184,7 +211,7 @@ void VThread::PostOperationalMsg(const Operational_msg* data)
     m_queue.push(threadMsg);
     m_cv.notify_one();
 }
-
+*/
 
 void VThread::Process()
 {
@@ -206,6 +233,16 @@ void VThread::Process()
 
         switch (msg->id) 
         {
+            case MSG_POST_USER_MSG :
+                {
+                    ASSERT_TRUE(msg->msg != NULL);
+                    normal_handler(this, msg);
+                    // Delete dynamic data passed through message queue
+                    delete msg;
+                    break;
+                }                            
+
+            /*
             case MSG_POST_Operational_MSG :
                 {
                     ASSERT_TRUE(msg->msg != NULL);
@@ -232,7 +269,7 @@ void VThread::Process()
                     delete msg;
                     break;
                 }
-
+            */
             case MSG_EXIT_THREAD: 
                 {
                     delete msg;
