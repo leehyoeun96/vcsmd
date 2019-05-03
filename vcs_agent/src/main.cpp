@@ -10,6 +10,7 @@
 #include "ros/ros.h"
 #include <geometry_msgs/TwistStamped.h>
 #include "vcs_agent/Message1.h"
+#include "vcs_agent/vcs.h"
 using namespace std;
 #define BUF_SIZE 255 
 
@@ -17,7 +18,7 @@ int vcsmd_sd;
 int vcsd_sd;
 int seq_no=0;
 double buffer[2];
-typedef struct message
+typedef struct _message
 {
     int seq_no;
     int ack_no;
@@ -26,52 +27,29 @@ typedef struct message
     double param_val;//used as reply for get
     int result_code;//result of cmd(0 means success)
     string result_msg;//infor/warning/error msg
-} msg;
+}message;
 
 double convert_mps_to_kmh(double linear_x)
 {
     return linear_x * 3.6;
 }
-
-void sendmsg()
+void sendtovcs(const vcs_agent::vcs::ConstPtr &input)
 {
     int bytecount;
-    int i=0;
-    msg packet;
-
-    printf("target vel : %lf\n",buffer[0]);
-    printf("target omega : %lf\n",buffer[1]);
-    
-    packet.seq_no = seq_no++;
-    packet.cmd_code = 1;
-    packet.param_id = 0;
-    packet.param_val = buffer[0];
+    message packet;
+    packet.seq_no = input->seq_no;
+    packet.ack_no = input->ack_no;
+    packet.cmd_code = input->cmd_code;
+    packet.param_id = input->param_id;
+    packet.param_val = input->param_val;
+    packet.result_code = input->result_code;
+    packet.result_msg = input->result_msg;
 
     if ((bytecount = send(vcsd_sd, &packet, sizeof(packet), 0)) == -1)
     {   
-        fprintf(stderr, "Error sending data %d\n", errno);
+        fprintf(stderr, "Error sending data : %s\n", strerror(errno));
     }
-    
-    packet.seq_no = seq_no++;
-    packet.cmd_code = 1;
-    packet.param_id = 1;
-    packet.param_val = buffer[1];
-
-    if ((bytecount = send(vcsd_sd, &packet, sizeof(packet), 0)) == -1)
-    {   
-        fprintf(stderr, "Error sending data %d\n", errno);
-    }
-    
-}
-void curVelCallback(const geometry_msgs::TwistStampedConstPtr &msg)
-{
-    //buffer[2]= convert_mps_to_kmh(msg->twist.linear.x);
-}
-void twistCallback(const geometry_msgs::TwistStampedConstPtr &input_msg)
-{
-    buffer[0] = convert_mps_to_kmh(input_msg->twist.linear.x);
-    buffer[1] = input_msg->twist.angular.z;
-    sendmsg();
+    printf("send!\n");
 }
 
 int main(int argc, char**argv)
@@ -79,13 +57,12 @@ int main(int argc, char**argv)
     ros::init(argc, argv,"vcs_agent");
     ros::NodeHandle nh;
 
-    ros::Subscriber agent_sub = nh.subscribe("/twist_cmd",1,twistCallback);
-    //    ros::Subscriber agent_sub = nh.subscribe("/estimate_twist",1,twistCallback);
-    ros::Subscriber agent_sub1 = nh.subscribe("/current_velocity",1,curVelCallback);
+    ros::Subscriber agent_sub = nh.subscribe("/target_val",100,sendtovcs);
+    ros::Subscriber agent_sub1 = nh.subscribe("/startup_cmd",100,sendtovcs);
 
     struct sockaddr_in vcsmd_addr;//sock addr for vcsmd
     struct sockaddr_in vcsd_addr;//sock addr for vcs
-    
+   
     //connect to vcsmd//
     vcsmd_sd = socket(PF_INET, SOCK_STREAM, 0);
    

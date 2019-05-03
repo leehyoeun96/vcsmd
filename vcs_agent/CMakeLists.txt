@@ -19,6 +19,7 @@ add_compile_options(-std=c++11)
     add_message_files(
             FILES
             Message1.msg
+            vcs.msg
             )
 
     generate_messages(

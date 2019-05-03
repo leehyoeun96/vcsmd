@@ -1,19 +1,5 @@
-#include <regex.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <unistd.h>
-#include <iostream>
-#include <cstring>
-#include <signal.h>
+#include "vcs_client/vcs_client.h"
 
-using namespace std;
-
-extern int EthercatManageHandler(char* module, char* arg1, double arg2);
-extern int ObdManageHandler(char *value);
-extern int CanManageHandler(char *value);
-extern double get_rtParam_double(char *name, char *field);
-extern int get_cfParam(char *name);
-#define MAX_BUFFER 1024
 // regex with one arg
 regex_t regex_help;
 regex_t regex_quit;
@@ -36,6 +22,9 @@ regex_t regex_set_param;
 regex_t regex_set_motion;
 regex_t regex_set_controller;
 
+vcs_client::agent message;
+int seqno =0;
+#define MAX_BUFFER 1024
 void regcomp_all()
 { // NOT COMPLETE!!!
     regcomp(&regex_help, "^help$", REG_EXTENDED);
@@ -46,14 +35,14 @@ void regcomp_all()
     regcomp(&regex_ecatoff, "^f$", REG_EXTENDED);
 
     regcomp(&regex_get, "^get ([a-zA-Z0-9_.]{1,40})$", REG_EXTENDED);
-    //regcomp(&regex_set, "^set ([a-zA-Z0-9_.]{1,40}) ([a-zA-Z0-9_.-]{1,19})$", REG_EXTENDED);
+    regcomp(&regex_set, "^set ([a-zA-Z0-9_.]{1,40}) ([a-zA-Z0-9_.-]{1,19})$", REG_EXTENDED);
 
     regcomp(&regex_set_ecat, "^set ecat ([a-zA-Z0-9_]{1,5})$", REG_EXTENDED);
     regcomp(&regex_set_obd, "^set obd ([a-zA-Z0-9_]{1,5})$", REG_EXTENDED);
     regcomp(&regex_set_can, "^set can ([a-zA-Z0-9_]{1,5})$", REG_EXTENDED);
     regcomp(&regex_set_hvi, "^set hvi ([a-zA-Z0-9_]{1,5})$", REG_EXTENDED);
 
-    regcomp(&regex_set_param, "^set param ([a-zA-Z0-9_.]{1,40}) ([a-zA-Z0-9_.-]{0,19})$", REG_EXTENDED);
+    //regcomp(&regex_set_param, "^set param ([a-zA-Z0-9_.]{1,40}) ([a-zA-Z0-9_.-]{0,19})$", REG_EXTENDED);
     regcomp(&regex_set_motion, "^set motion ([a-zA-Z0-9_.]{1,19})$", REG_EXTENDED);
     regcomp(&regex_set_controller, "^set controller ([a-zA-Z0-9_.]{1,19})$", REG_EXTENDED);
 }
@@ -68,13 +57,13 @@ void regfree_all()
     regfree(&regex_ecatoff);
 
     regfree(&regex_get);
-    //regfree(&regex_set);
+    regfree(&regex_set);
     regfree(&regex_set_ecat);
     regfree(&regex_set_obd);
     regfree(&regex_set_can);
     regfree(&regex_set_hvi);
 
-    regfree(&regex_set_param);
+    //regfree(&regex_set_param);
     regfree(&regex_set_motion);
     regfree(&regex_set_controller);
 }
@@ -122,9 +111,7 @@ void _reg_process(char *msg)
     regmatch_t groups[3];
     char arg1[128];
     char arg2[128];
-
     chomp(msg, strlen(msg)); // remove \r\n from message
-    //regcomp_all();
 
     if (regexec_with_args(&regex_help, msg, 0, NULL, NULL, NULL))
     {
@@ -134,7 +121,7 @@ void _reg_process(char *msg)
     }
     else if (regexec_with_args(&regex_quit, msg, 0, NULL, NULL, NULL))
     {
-        //do_quit();
+        //do_quit();-zA-Z0-9_.]{1,19})$", REG_EXTENDED);
         //cout << ": quit" << endl;
         goto done;
     }
@@ -146,172 +133,113 @@ void _reg_process(char *msg)
     }
     else if (regexec_with_args(&regex_homingpedals, msg, 0, NULL, NULL, NULL))
     {
-        if (get_cfParam("Main.use_ecat"))
-        {
             //EthercatManageHandler("Controller", "HomingPedals", NULL);
-            goto done;
-        }
         cout << "check and enable(1) use_ecat in .xml" << endl;
         //cout << ": homingpedals " << endl;
         goto done;
     }
     else if (regexec_with_args(&regex_ecatoff, msg, 0, NULL, NULL, NULL))
     {
-        if (get_cfParam("Main.use_ecat"))
-        {
-            //EthercatManageHandler("Ecat", "off",NULL);
-            goto done;
-        }
         //cout << ": ecatoff " << endl;
         goto done;
     }
     else if (regexec_with_args(&regex_get, msg, 2, groups, arg1, NULL))
     {
-
-        if (get_rtParam_double(arg1, "value") != -1)
-        {
-            cout << "rtParam Matched : " << arg1 << " = " << get_rtParam_double(arg1, "value") << endl;
-            goto done;
-        }
-        if (get_cfParam(arg1) != -1)
-        {
-            cout << "cfParam Matched : " << arg1 << " = " << get_cfParam(arg1) << endl;
-            //cout << ": get " << arg1 << endl;
-            goto done;
-        }
-
         goto done;
     }
     
     else if (regexec_with_args(&regex_set_ecat, msg, 2, groups, arg1, NULL))
     {
-        if (get_cfParam("Main.use_ecat"))
-        {
-            /*if (EthercatManageHandler("Ecat",arg1,NULL))
-                goto done;
-            else
-            {
-                printf("EM Handler,arg1 error : state name error\n");
-                goto done;
-            }*/
-        }
-        cout << "check and enable(1) use_ecat in .xml" << endl;
-        //cout << ": set : ecat " << arg1 << " " << arg2 << endl;
+        message.seq_no = seqno++; 
+        message.cmd_code = 1;
+        message.param_id = 0;
+        if( strcmp(arg1, "up") == 0) message.param_val = 0;
+        else if( strcmp(arg1, "on") == 0) message.param_val = 1;
+        else if( strcmp(arg1, "off") == 0) message.param_val = 2;
+        else if( strcmp(arg1, "down") == 0) message.param_val = 3;
+        message.result_msg = arg1;
         goto done;
     }
     else if (regexec_with_args(&regex_set_obd, msg, 2, groups, arg1, NULL))
     {
-        if (get_cfParam("Main.use_obd"))
-        {
-            /*if (ObdManageHandler(arg1))
-                goto done;
-            else
-            {
-                printf("OM Handler,arg1 error : state name error\n");
-                goto done;
-            }*/
-        }
-        cout << "check and enable(1) use_obd in .xml" << endl;
-        //cout << ": set : obd " << arg1 << " " << arg2 << endl;
+        message.seq_no = seqno++; 
+        message.cmd_code = 1;
+        message.param_id = 1;
+        if( strcmp(arg1, "up") == 0) message.param_val = 0;
+        else if( strcmp(arg1, "on") == 0) message.param_val = 1;
+        else if( strcmp(arg1, "off") == 0) message.param_val = 2;
+        else if( strcmp(arg1, "down") == 0) message.param_val = 3;
+        message.result_msg = arg1;
         goto done;
     }
     else if (regexec_with_args(&regex_set_can, msg, 2, groups, arg1, NULL))
     {
-        if (get_cfParam("Main.use_can"))
-        {
-            /*
-            if (CanManageHandler(arg1)) {
-                goto done;
-            }
-            
-
-            else
-            {
-                printf("CM Handler, arg1 error : state name error\n");
-                goto done;
-            }
-            */
-        }
-        cout << "check and enable(1) use_can in .xml" << endl;
-        //cout << ": set : can " << arg1 << " " << arg2 << endl;
+         message.seq_no = seqno++; 
+        message.cmd_code = 1;
+        message.param_id = 2;
+        if( strcmp(arg1, "up") == 0) message.param_val = 0;
+        else if( strcmp(arg1, "on") == 0) message.param_val = 1;
+        else if( strcmp(arg1, "off") == 0) message.param_val = 2;
+        else if( strcmp(arg1, "down") == 0) message.param_val = 3;
+        message.result_msg = arg1;
         goto done;
     }
     else if (regexec_with_args(&regex_set_hvi, msg, 2, groups, arg1, NULL))
     {
-        if (get_cfParam("Main.use_hvi"))
-        {
-
-            goto done;
-        }
-        cout << "check and enable(1) use_hvi in .xml" << endl;
-        //cout << ": set : hvi " << arg1 << " " << arg2 << endl;
+          message.seq_no = seqno++; 
+        message.cmd_code = 1;
+        message.param_id = 3;
+        if( strcmp(arg1, "up") == 0) message.param_val = 0;
+        else if( strcmp(arg1, "on") == 0) message.param_val = 1;
+        else if( strcmp(arg1, "off") == 0) message.param_val = 2;
+        else if( strcmp(arg1, "down") == 0) message.param_val = 3;
+        message.result_msg = arg1;
         goto done;
     }
     
     else if (regexec_with_args(&regex_set_motion, msg, 2, groups, arg1, NULL))
     {
-        if (get_cfParam("Main.use_ecat"))
-        {
-           /* if (EthercatManageHandler("Motion", arg1, atof(arg2)))
-                goto done;
-            else
-            {
-                printf("EC Handler, arg1 error : Motion name error\n");
-                goto done;
-            }
-            */
-        }
-        cout << "check and enable(1) use_ecat in .xml" << endl;
-        //cout << ": set : controller " << arg1 << " " << arg2 << endl;
+        message.seq_no = seqno++; 
+        message.cmd_code = 1;
+        message.param_id = 4;
+        if( strcmp(arg1, "pullover") == 0) message.param_val = 0;
+        else if( strcmp(arg1, "homingpedals") == 0) message.param_val = 1;
+        else if( strcmp(arg1, "estop") == 0) message.param_val = 2;
+        else if( strcmp(arg1, "selftest") == 0) message.param_val = 3;
+        message.result_msg = arg1;
         goto done;
     }
     else if (regexec_with_args(&regex_set_controller, msg, 2, groups, arg1, NULL))
     {
-        if (get_cfParam("Main.use_ecat"))
-        {
-           /* if (EthercatManageHandler("Controller", arg1, atof(arg2)))
-                goto done;
-            else
-            {
-                printf("EC Handler, arg1 error : Controller name error\n");
-                goto done;
-            }
-            */
-        }
-        cout << "check and enable(1) use_ecat in .xml" << endl;
-        //cout << ": set : controller " << arg1 << " " << arg2 << endl;
+        message.seq_no = seqno++; 
+        message.cmd_code = 1;
+        message.param_id = 5;
+        if( strcmp(arg1, "tunecruisecontrol") == 0) message.param_val = 0;
+        else if( strcmp(arg1, "selfdriving") == 0) message.param_val = 1;
+        message.result_msg = arg1;
         goto done;
     }
-    else if (regexec_with_args(&regex_set_param, msg, 3, groups, arg1, arg2))
+    else if (regexec_with_args(&regex_set, msg, 3, groups, arg1, arg2))
     {
-        if (get_cfParam("Main.use_ecat"))
-        {
-            /*if (EthercatManageHandler("Param", arg1, atof(arg2)))
-                goto done;
-            else
-            {
-                printf("EC Handler, arg1 error : Param name error\n");
-                goto done;
-            }
-            */
-        }
-        cout << "check and enable(1) use_ecat in .xml" << endl;
-        //cout << ": set : param " << arg1 << " " << arg2 << endl;
+        message.seq_no = seqno++; 
+        message.cmd_code = 1;
+        if( strcmp(arg1, "throttle.target_position") == 0) message.param_id = 6;
+        else if( strcmp(arg1, "brake.target_position") == 0) message.param_id = 7;
+        else if( strcmp(arg1, "lidar.center_target_position") == 0) message.param_id = 8;
+        else if( strcmp(arg1, "lidar.left_target_position") == 0) message.param_id = 9;
+        else if( strcmp(arg1, "lidar.right_target_position") == 0) message.param_id = 10;
+        else if( strcmp(arg1, "poselidar.mode") == 0) message.param_id = 11;
+        else if( strcmp(arg1, "steerwheel.target_position") == 0) message.param_id = 12;
+        else if( strcmp(arg1, "gearstick.target_position") == 0) message.param_id = 13;
+        else if( strcmp(arg1, "cruisecontrol.target_velocity") == 0) message.param_id = 14;
+        else if( strcmp(arg1, "steercontrol.target_angular_velocity") == 0) message.param_id = 15;
+        message.param_val = atof(arg2);
+        message.result_msg = arg1;
         goto done;
     }
-    /*else if (regexec_with_args(&regex_set, msg, 3, groups, arg1, arg2))
-    {
-        
-                printf("in regex_set,arg1 error : parameter name error\n");
-                goto done;
-        
-        //cout << ": set : param " << arg1 << " " << arg2 << endl;
-        goto done;
-    }*/
-    printf("Unknown command\n", msg);
+    printf("Unknown command\n");
 
 done:
-    //regfree_all();
     return;
 }
 
@@ -327,81 +255,32 @@ void print_string(char *p)
         printf("%u_", (unsigned char)*p++);
     printf("\n");
 }
-#include <syslog.h>
-void read_thread_handler(void *arg)
+vcs_client::agent parse_handler(char* file_buf)
 {
     char buf[MAX_BUFFER], buffer[MAX_BUFFER];
-    //int sockfd = *((int *)arg);
     int nread, nconsumed, totread = 0;
     char *cpos, *npos, *rpos;
 
-    //pthread_setcancelstate(PTHREAD_CANCEL_ENABLE, NULL);
-    //pthread_setcanceltype(PTHREAD_CANCEL_ASYNCHRONOUS, NULL);
     memset(buffer, 0, sizeof(buffer));
 
-    regcomp_all();
-
-    while (1)
+    strcpy(buf, file_buf);
+    if (sizeof(buffer) - strlen(buffer) <= strlen(buf))
     {
-        memset(buf, 0, MAX_BUFFER);
-        nread = read(STDIN_FILENO, buf, sizeof(buf));
-        if (nread < 0)
-        {
-
-            kill(getpid(), SIGINT);
-        }
-        /*else if (nread == 0) {
-	      printf("recv_thread: socket closed\n");
-	      kill(getpid(), SIGINT);
-	    }*/
-        // else if (nread > 0)
-
-        if (sizeof(buffer) - strlen(buffer) <= strlen(buf))
-        {
-            printf("read_thread: too small buffer\n");
-            kill(getpid(), SIGINT);
-        }
-
-        strcat(buffer, buf);
-        totread += nread;
-        cpos = buffer;
-        while ((npos = (char *)memchr(cpos, '\n', totread)) != NULL)
-        {
-            *npos = 0; // replace '\n' with NULL
-            if ((rpos = (char *)memchr(cpos, '\r', totread)) != NULL)
-                *rpos = 0; // replace '\r' with NULL
-            //printf("read_thread: %s\n", cpos);
-            if (reg_process(cpos) != 0)
-                kill(getpid(), SIGINT);
-            nconsumed = npos - cpos + 1;
-            totread -= nconsumed;
-            cpos = npos + 1;
-        }
-        //memset(buf, 0, MAX_BUFFER);
-        strcpy(buf, cpos);
-        memset(buffer, 0, MAX_BUFFER);
-        strcpy(buffer, buf);
-        if (strlen(buffer) > 0)
-        {
-            printf("read_thread: %s (in buffer)\n", buffer);
-            print_string(buffer);
-        }
+        printf("read_thread: too small buffer\n");
+        kill(getpid(), SIGINT);
     }
 
-    regfree_all();
+    strcat(buffer, buf);
+    totread += strlen(file_buf);
+    cpos = buffer;
+    while ((npos = (char *)memchr(cpos, '\n', totread)) != NULL)
+    {
+        *npos = 0; // replace '\n' with NULL
+        if ((rpos = (char *)memchr(cpos, '\r', totread)) != NULL)
+            *rpos = 0; // replace '\r' with NULL
+        if (reg_process(cpos) != 0)
+            printf("reg_process fail");
+        printf("parse_handler: %s\n", cpos);
+    }
+    return message;
 }
-/*int main(int argc, char *argv[])
-{
-
-	 regcomp_all();// compile all regex only once
-
-	while (1)
-	{
-
-		read_thread_handler();
-	}
-
-	regfree_all(); // free all regex
-
-	return 0;
-}*/

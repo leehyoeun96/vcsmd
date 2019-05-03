@@ -10,12 +10,13 @@
 #include <iostream>
 #include <syslog.h>//added by hyo
 #include <fcntl.h>//added by hyo
-#include "vthread.h"//namespace std is here
+#include "vthread.h"
 #include "socketprogram.h"
 #include "hybridautomata.h"
 #define LOCKFILE "/var/run/vcsd.pid"
 #define LOCKMODE (S_IRUSR|S_IWUSR|S_IRGRP|S_IROTH)
 
+using namespace std;
 
 extern int readVehicleConfigs(char *xml_file); // from xml.cpp
 extern int get_cfParam(char *name);            // from GlobalParam.cpp
@@ -29,6 +30,7 @@ extern void ecatOff();
 extern void ecatDown();
 extern void obdOff();
 extern void obdDown();
+extern void parseMessage(UserMsg *msg);
 
 pthread_t recv_thread[MAX_CLIENTS];
 pthread_t read_thread;
@@ -195,22 +197,12 @@ void *RecvHandler(void *arg)
             printf("connection fail\n");
             break;
         }
-        // timestamp = get_rtParam_int("Target_Velocity", "timestamp");
-        // set_rtParam("Target_Velocity", "timestamp", ++timestamp);
-        // timestamp = get_rtParam_int("Target_Angular", "timestamp");
-        // set_rtParam("Target_Angular", "timestamp", ++timestamp);
-        //timestamp = get_var("Current_Velocity", "timestamp");
-        //set_rtParam("Current_Velocity","timestamp",++timestamp);
-
-        //set_rtParam("Current_Velocity","value",buffer[2]);
-        //set_rtParam("SteerControl.target_angle", "value", buffer[1]);
-        //set_rtParam("CruiseControl.target_velocity", "value", buffer[0]);
-        
         syslog(LOG_ERR,"packet->cmd_code :%d", packet->cmd_code);//added by hyo
         
         if(packet->cmd_code)
         {
-            switch(packet->param_id)
+        parseMessage(packet);
+       /*     switch(packet->param_id)
             {
                 case 0:
                     set_rtParam("SteerControl.target_angle", "value", packet->param_val);
@@ -226,9 +218,9 @@ void *RecvHandler(void *arg)
                     syslog(LOG_ERR,"can't set param");
                     break;
             }
+        */
         }
     }
-    printf("what?\n");
     pthread_exit((void *)2);
 }
 void createThreads(int client_idx)

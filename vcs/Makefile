@@ -14,11 +14,11 @@ pc  :: VCFserver_pc.exe
 rpi :: VCFServer_rpi.exe 
 can  :: VCFserver_can.exe
 
-VCFserver_can.exe :  Controller_HA.o Ecat_HA.o ecat.o EthercatCyclic.o EthercatManager.o GlobalParam.o hybridautomata.o Log.o Main.o Motion_HA.o Obd_HA.o obd.o ObdManager.o regex.o xml.o Can_HA.o CanManager.o can_decode.o
+VCFserver_can.exe :  Controller_HA.o Ecat_HA.o ecat.o EthercatCyclic.o EthercatManager.o GlobalParam.o hybridautomata.o Log.o Main.o Motion_HA.o Obd_HA.o obd.o ObdManager.o regex.o xml.o Can_HA.o CanManager.o can_decode.o packetparser.o
 	$(GG) -o $@ $^ $(KBHIT_FLAGS) $(CFLAGS) $(XML_FLAGS) $(LDFLAGS) $(PROTO_FLAGS) $(ECAT_FLAGS) $(PCAN_FLAGS)
-VCFserver_pc.exe : GlobalParam.o Log.o Main.o regex.o xml.o 
+VCFserver_pc.exe : GlobalParam.o Log.o Main.o regex.o xml.o packetparser.o 
 	$(GG) -o $@ $^ $(KBHIT_FLAGS) $(CFLAGS) $(XML_FLAGS) $(LDFLAGS)  
-VCFServer_rpi.exe : Controller_HA.o Ecat_HA.o ecat.o EthercatCyclic.o EthercatManager.o GlobalParam.o hybridautomata.o Log.o Main.o Motion_HA.o Obd_HA.o obd.o ObdManager.o regex.o xml.o Can_HA.o CanManager.o can_decode.o
+VCFServer_rpi.exe : Controller_HA.o Ecat_HA.o ecat.o EthercatCyclic.o EthercatManager.o GlobalParam.o hybridautomata.o Log.o Main.o Motion_HA.o Obd_HA.o obd.o ObdManager.o regex.o xml.o Can_HA.o CanManager.o can_decode.o packetparser.o
 	$(GG) -o $@ $^ $(KBHIT_FLAGS) $(RPI_FLAGS) $(CFLAGS) $(XML_FLAGS) $(LDFLAGS) $(PROTO_FLAGS) $(ECAT_FLAGS) $(PCAN_FLAGS)
 
 %.o: %.c $(DEPS)
