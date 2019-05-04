@@ -1,0 +1,11 @@
+<launch>
+
+  <!--runnig mission_manager-->
+  <node name ="mission_manager" pkg="mission_manager" type="mission_manager" output="screen"/>  
+
+!--when you drive in road, disable this line--
+  <!-- launch map -->
+  <include file="$(find mission_manager)/launch/map.launch"/>
+
+
+</launch>

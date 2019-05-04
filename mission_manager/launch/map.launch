@@ -1,0 +1,12 @@
+<launch>
+
+  <!-- TF -->
+  <include file="/home/autoware/.autoware/data/tf/tf.launch"/>
+
+  <!-- Point Cloud Map -->
+  <node pkg="map_file" type="points_map_loader" name="points_map_loader" args="noupdate /home/autoware/shared_dir/0.32_1st_2st_3st_0.27_4st_0.27_5st_0.27_6st_ternel.pcd" />
+
+  <!-- Vector Map -->
+  <node pkg="map_file" type="vector_map_loader" name="vector_map_loader" args="/home/autoware/shared_dir/kcity/vector/vec_test_0402/vector_map_0330_tf_0402_minus0.8/dtlane.csv /home/autoware/shared_dir/kcity/vector/vec_test_0402/vector_map_0330_tf_0402_minus0.8/idx.csv /home/autoware/shared_dir/kcity/vector/vec_test_0402/vector_map_0330_tf_0402_minus0.8/lane.csv /home/autoware/shared_dir/kcity/vector/vec_test_0402/vector_map_0330_tf_0402_minus0.8/node.csv /home/autoware/shared_dir/kcity/vector/vec_test_0402/vector_map_0330_tf_0402_minus0.8/point.csv" />
+
+</launch>

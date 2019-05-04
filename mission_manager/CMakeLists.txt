@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 2.8.3)
 project(mission_manager)
 
 ## Compile as C++11, supported in ROS Kinetic and newer
-# add_compile_options(-std=c++11)
+add_compile_options(-std=c++11)
 
 ## Find catkin macros and libraries
 ## if COMPONENTS list like find_package(catkin REQUIRED COMPONENTS xyz)
@@ -15,7 +15,8 @@ find_package(catkin REQUIRED COMPONENTS
 ## Generate messages in the 'msg' folder
  add_message_files(
    FILES
-   Message1.msg
+   Message.msg
+   vcs_msg.msg
  )
 ## Generate added messages and services with any dependencies listed here
  generate_messages(
@@ -29,11 +30,10 @@ catkin_package(
   DEPENDS system_lib
 )
 include_directories(
-# include
+ include
   ${catkin_INCLUDE_DIRS}
 )
- add_executable(${PROJECT_NAME} src/mission_manager_node.cpp)
-# add_dependencies(${PROJECT_NAME} ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
+ add_executable(${PROJECT_NAME} src/mission_manager_core.cpp src/mission_manager_node.cpp)
  add_dependencies(${PROJECT_NAME} mision_manager_generate_messages_cpp)
 
 ## Specify libraries to link a library or executable target against

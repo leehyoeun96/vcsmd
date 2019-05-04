@@ -1,0 +1,18 @@
+#!/bin/sh
+echo shutdown script
+#control
+rosnode kill pure_pursuit
+rosnode kill vel_relay
+rosnode kill pose_relay
+rosnode kill twist_filter
+rosnode kill wf_simulator
+
+#local_planner
+rosnode kill op_behavior_selector
+rosnode kill op_trajectory_evaluator
+rosnode kill op_trajectory_generator
+rosnode kill op_common_params
+
+#global_planner
+rosnode kill op_global_planner
+

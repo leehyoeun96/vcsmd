@@ -1,0 +1,58 @@
+<launch>
+  <!-- setting path parameter -->
+  <arg name="enableRvizInput" default="true" />
+  <arg name="topic_pose_stamped" default="/ndt_pose" />
+  <arg name="topic_twist_stamped" default="/estimate_twist" />
+  <arg name="sim_mode" default="True" />
+
+  <!-- vel_pose_mux -->
+  <include file="$(find autoware_connector)/launch/vel_pose_connect.launch">
+    <arg name="topic_pose_stamped" value="$(arg topic_pose_stamped)" />
+    <arg name="topic_twist_stamped" value="$(arg topic_twist_stamped)" />
+    <arg name="sim_mode" value="$(arg sim_mode)" />
+  </include>
+  
+  <!-- global planner -->
+  <include file="$(find op_global_planner)/launch/op_global_planner.launch">
+    <arg name="enableRvizInput" value="$(arg enableRvizInput)" />
+  </include>
+
+  <!-- twist_filter -->
+  <include file="$(find waypoint_follower)/launch/twist_filter.launch"/>
+  <include file="$(find waypoint_follower)/launch/wf_simulator.launch"/>
+
+  <!--publish pose-->
+  <!--node pkg="rostopic" type="rostopic" name="initialpose"
+      args="pub -1 /initialpose geometry_msgs/PoseWithCovarianceStamped 
+      '{header: {frame_id: 'world'}, pose: { pose: { position: {x: 659.468505859, y: 21.0457038879, z: 0.0},  orientation: {x: 0.0, y: 0.0, z: -0.997918245194, w: 0.064491673182}}, covariance: [0.25, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.25, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.06853891945200942]}}'"
+  /-->
+
+  <node pkg="rostopic" type="rostopic" name="move_base_simple_goal"
+      args="pub -1 /move_base_simple/goal geometry_msgs/PoseStamped
+      '{pose: { position: { x: 481.615600586, y: 10.0332069397, z: 0.0}, orientation: {x: 0.0, y: 0.0, z: 0.985231483172, w: -0.171227698014}}}'"
+  />
+
+  <!-- local planner -->
+  <arg name="maxVelocity" default="30.0" />
+  <include file="$(find op_local_planner)/launch/op_common_params.launch">
+  	<arg name="maxVelocity" default="$(arg maxVelocity)" />
+  </include>
+  <include file="$(find op_local_planner)/launch/op_trajectory_generator.launch"/>
+  <include file="$(find op_local_planner)/launch/op_trajectory_evaluator.launch"/>
+  <include file="$(find op_local_planner)/launch/op_behavior_selector.launch"/>
+
+  <!--setting pure_pursuit -->
+  <node pkg="rostopic" type="rostopic" name="config_waypoint_follower_rostopic"
+        args="pub -l /config/waypoint_follower autoware_config_msgs/ConfigWaypointFollower
+              '{ header: auto, param_flag: 1, velocity: 5.0, lookahead_distance: 4.0, lookahead_ratio: 2.0, minimum_lookahead_distance: 6.0, displacement_threshold: 0.0, relative_angle_threshold: 0.0 }' "
+  />
+
+  <!--runnig pure_pursuit-->
+  <include file="$(find timed_roslaunch)/launch/timed_roslaunch.launch">
+	<arg name="time" value="2"/>
+	<arg name="pkg" value="waypoint_follower"/>
+	<arg name="file" value="pure_pursuit.launch"/>
+	<arg name="value" value=""/>
+  </include>
+
+</launch>
