@@ -150,11 +150,8 @@ void VThread::ExitThread()
 
 void VThread::PostMsg(const UserMsg* data)
 {
-    cout << "PostMSg()" <<m_thread<<endl;
     ASSERT_TRUE(m_thread);
-    cout<<"PostMsg()called"<<endl;
     ThreadMsg* threadMsg = new ThreadMsg(MSG_POST_USER_MSG,0,data);
-    cout<<"threadMsg created"<<endl;
 
     // Add user data msg to queue and notify worker thread
     std::unique_lock<std::mutex> lk(m_mutex);

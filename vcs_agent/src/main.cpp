@@ -4,15 +4,19 @@
 #include <string.h>
 #include <sys/socket.h>
 #include <sys/types.h>
+#include <sys/epoll.h>
+#include <arpa/inet.h>
+#include <sys/wait.h>
 #include <netinet/in.h>
+#include <fcntl.h>
 #include <unistd.h>
 #include <arpa/inet.h>
 #include "ros/ros.h"
 #include <geometry_msgs/TwistStamped.h>
-#include "vcs_agent/Message1.h"
 #include "vcs_agent/vcs.h"
 using namespace std;
 #define BUF_SIZE 255 
+#define MAX_EVENTS 10 
 
 int vcsmd_sd;
 int vcsd_sd;
@@ -44,12 +48,12 @@ void sendtovcs(const vcs_agent::vcs::ConstPtr &input)
     packet.param_val = input->param_val;
     packet.result_code = input->result_code;
     packet.result_msg = input->result_msg;
+    cout<<"sendtovcs: "<<packet.result_msg<<endl;
 
     if ((bytecount = send(vcsd_sd, &packet, sizeof(packet), 0)) == -1)
     {   
         fprintf(stderr, "Error sending data : %s\n", strerror(errno));
     }
-    printf("send!\n");
 }
 
 int main(int argc, char**argv)
@@ -59,29 +63,33 @@ int main(int argc, char**argv)
 
     ros::Subscriber agent_sub = nh.subscribe("/target_val",100,sendtovcs);
     ros::Subscriber agent_sub1 = nh.subscribe("/startup_cmd",100,sendtovcs);
+    ros::Publisher agent_pub = nh.advertise<vcs_agent::vcs>("/vcs_ack", 10);
+    vcs_agent::vcs vcs_ack;
+
+    message read_buffer;
 
     struct sockaddr_in vcsmd_addr;//sock addr for vcsmd
     struct sockaddr_in vcsd_addr;//sock addr for vcs
-   
+
     //connect to vcsmd//
     vcsmd_sd = socket(PF_INET, SOCK_STREAM, 0);
-   
+
     memset(&vcsmd_addr, 0, sizeof(vcsmd_addr));
     vcsmd_addr.sin_family = PF_INET;
     vcsmd_addr.sin_port = htons(9002);
     inet_aton("127.0.0.1", &vcsmd_addr.sin_addr);
-    
+
     if(connect(vcsmd_sd, (struct sockaddr *)&vcsmd_addr, sizeof(vcsmd_addr)) ==-1)
     {
         printf("connect error: %s\n", strerror(errno));
         return 0;
     }
     close(vcsmd_sd);
-  
+
     //connect to vcsd//
     sleep(1);
     vcsd_sd = socket(PF_INET, SOCK_STREAM, 0);
-    
+
     memset(&vcsd_addr, 0, sizeof(vcsd_addr));
     vcsd_addr.sin_family = AF_INET;
     vcsd_addr.sin_port = htons(9000);
@@ -92,14 +100,61 @@ int main(int argc, char**argv)
         printf("connect error with vcsd\n");
         return 0;
     }
-    
+
     printf("connected...\n");
+
+    //epoll setting//
+    int i;
+    int str_len = 0;
+    int event_cnt;
+    int epfd;
+    struct epoll_event ev, evs[MAX_EVENTS];
+
+    epfd=epoll_create1(0);
+    ev.events = EPOLLIN;
+    ev.data.fd = vcsd_sd;
+    epoll_ctl(epfd, EPOLL_CTL_ADD, vcsd_sd, &ev);
 
     while(ros::ok())
     {
         ros::spinOnce();
-    }
+        event_cnt= epoll_wait(epfd,evs,MAX_EVENTS,1);
+        if(event_cnt ==-1){
+            perror("epoll");
+            break;
+        }
+        else if(event_cnt ==0){
+            continue;
+        }
+        for(i=0;i<=event_cnt;i++){
+            if(evs[i].events ==EPOLLIN){
+                str_len = read(evs[i].data.fd,&read_buffer,sizeof(read_buffer));
+                if(str_len==0){
+                    epoll_ctl(epfd,EPOLL_CTL_DEL,evs[i].data.fd,NULL);
+                    close(evs[i].data.fd);
+                    printf("Closed client: %d\n",evs[i].data.fd);
+                }
+                else{
+                    cout << "seq_no "<< read_buffer.seq_no<<endl;
+                    cout << "ack_no "<< read_buffer.ack_no<<endl;
+                    cout << "cmd_code "<<read_buffer.cmd_code<<endl;
+                    cout << "param_id "<< read_buffer.param_id<<endl;
+                    cout << "param_val "<< read_buffer.param_val<<endl;
+                    cout << "result_code "<< read_buffer.result_code<<endl;
+                    cout << "result_msg " << read_buffer.result_msg<<endl;
+                    vcs_ack.seq_no = read_buffer.seq_no;
+                    vcs_ack.ack_no = read_buffer.ack_no;
+                    vcs_ack.cmd_code = read_buffer.cmd_code;
+                    vcs_ack.param_id = read_buffer.param_id;
+                    vcs_ack.param_val = read_buffer.param_val;
+                    vcs_ack.result_code = read_buffer.result_code;
+                    vcs_ack.result_msg = read_buffer.result_msg;
+                    agent_pub.publish(vcs_ack);
 
+                }
+            }
+        }
+    }
+    epoll_ctl(epfd,EPOLL_CTL_DEL,vcsd_sd,NULL);
     close(vcsd_sd);
 }
-

@@ -1,7 +1,7 @@
 #include "vcs_client/vcs_client.h"
 ros::Subscriber client_sub;
-ros::Subscriber vcs_msg_sub;
 ros::Subscriber client_sub1;
+ros::Subscriber vcs_msg_sub;
 ros::Publisher vcs_cmd_pub;
 ros::Publisher vcs_val_pub;
 

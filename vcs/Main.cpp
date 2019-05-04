@@ -149,22 +149,9 @@ void signalHandler(int signo)
     shutDown();
     exit(0);
 }
-/*typedef struct message //added by hyo
-{
-    int seq_no;
-    int ack_no;
-    int cmd_code;//0 means get / 1 means set
-    int param_id;//0 means target velocity/ 1 means target omega//temporally
-    double param_val;//used as reply for get
-    int result_code;//result of cmd(0 means success)
-    string result_msg;//infor/warning/error msg
-} msg;
-*/
 void SendHandler(VThread *t, ThreadMsg *msg)
 {
-    syslog(LOG_ERR,"Send Handler create!\n");
     const UserMsg *packet = static_cast<const UserMsg*>(msg->msg);
-    
     for(int i=0; i<num_of_clients; ++i)
     {
         if(write(clients[i].sockfd, packet, sizeof(*packet)) < 0)
@@ -182,7 +169,7 @@ void *RecvHandler(void *arg)
     double buffer[10];//modified by hyo
 
     UserMsg *packet = new UserMsg;
-    //UserMsg *packet = static_cast<const UserMsg*>UserMsg();
+//    UserMsg *packet = static_cast<UserMsg*>(&packet);
 
     printf("sockfd %d\n", sockfd);
     while (1)
@@ -198,10 +185,11 @@ void *RecvHandler(void *arg)
             break;
         }
         syslog(LOG_ERR,"packet->cmd_code :%d", packet->cmd_code);//added by hyo
-        
+    
         if(packet->cmd_code)
         {
-        parseMessage(packet);
+            parseMessage(packet);
+            send_thread[client_idx]->PostMsg((const UserMsg*)packet);
        /*     switch(packet->param_id)
             {
                 case 0:
