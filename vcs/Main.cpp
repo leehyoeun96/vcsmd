@@ -4,7 +4,6 @@
 #include <signal.h>
 #include <errno.h>
 #include <unistd.h>
-#include <string.h>
 //#include "gpionum.h" /////gpio
 #include <stdio.h>
 #include <iostream>
@@ -167,7 +166,6 @@ void *RecvHandler(void *arg)
     int sockfd = get_sockfd(client_idx);
     int bytecount = 0;
     double buffer[10];//modified by hyo
-
     UserMsg *packet = new UserMsg;
 //    UserMsg *packet = static_cast<UserMsg*>(&packet);
 
@@ -185,6 +183,7 @@ void *RecvHandler(void *arg)
             break;
         }
         syslog(LOG_ERR,"packet->cmd_code :%d", packet->cmd_code);//added by hyo
+        printf("packet->cmd_code :%s\n", packet->result_msg);//added by hyo
     
         if(packet->cmd_code)
         {

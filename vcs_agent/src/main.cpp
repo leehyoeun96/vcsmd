@@ -30,7 +30,7 @@ typedef struct _message
     int param_id;//0 means target velocity/ 1 means target omega//temporally
     double param_val;//used as reply for get
     int result_code;//result of cmd(0 means success)
-    string result_msg;//infor/warning/error msg
+    char result_msg[100];//infor/warning/error msg
 }message;
 
 double convert_mps_to_kmh(double linear_x)
@@ -47,7 +47,8 @@ void sendtovcs(const vcs_agent::vcs::ConstPtr &input)
     packet.param_id = input->param_id;
     packet.param_val = input->param_val;
     packet.result_code = input->result_code;
-    packet.result_msg = input->result_msg;
+    sprintf(packet.result_msg, "%s", input->result_msg.c_str());
+//    packet.result_msg = static_cast<const char*>(input->result_msg.c_str());
     cout<<"sendtovcs: "<<packet.result_msg<<endl;
 
     if ((bytecount = send(vcsd_sd, &packet, sizeof(packet), 0)) == -1)
