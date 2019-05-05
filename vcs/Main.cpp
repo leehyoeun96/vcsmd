@@ -165,14 +165,14 @@ void *RecvHandler(void *arg)
     int client_idx = *(int *)arg;
     int sockfd = get_sockfd(client_idx);
     int bytecount = 0;
-    double buffer[10];//modified by hyo
-    UserMsg *packet = new UserMsg;
-//    UserMsg *packet = static_cast<UserMsg*>(&packet);
-
+    char buffer[1000];//modified by hyo
+   // UserMsg *packet = new UserMsg;
+    UserMsg packet;
     printf("sockfd %d\n", sockfd);
     while (1)
     {  
-        if ((bytecount = recv(sockfd, packet , sizeof(*packet), MSG_WAITALL)) == -1)//modified by hyo
+        //if ((bytecount = recv(sockfd,(void*)&packet , sizeof(UserMsg), 0)) == -1)//modified by hyo
+        if ((bytecount = read(sockfd, (void*)&packet , sizeof(UserMsg))) == -1)//modified by hyo
         {
             fprintf(stderr, "Error receiving data %d\n", errno);
             syslog(LOG_ERR, "Error receiving data %d\n", errno);
@@ -182,13 +182,16 @@ void *RecvHandler(void *arg)
             printf("connection fail\n");
             break;
         }
-        syslog(LOG_ERR,"packet->cmd_code :%d", packet->cmd_code);//added by hyo
-        printf("packet->cmd_code :%s\n", packet->result_msg);//added by hyo
+        //packet = (UserMsg*)buffer;
+        syslog(LOG_ERR,"packet->cmd_code :%d", packet.cmd_code);//added by hyo
+        printf("packet->cmd_code :%d", packet.cmd_code);//added by hyo
+        printf("packet->cmd_code :%s\n", packet.result_msg);//added by hyo
+        printf("packet->param_val :%lf\n", packet.param_val);//added by hyo
     
-        if(packet->cmd_code)
+        if(packet.cmd_code)
         {
-            parseMessage(packet);
-            send_thread[client_idx]->PostMsg((const UserMsg*)packet);
+            parseMessage(&packet);
+            send_thread[client_idx]->PostMsg((const UserMsg*)&packet);
        /*     switch(packet->param_id)
             {
                 case 0:

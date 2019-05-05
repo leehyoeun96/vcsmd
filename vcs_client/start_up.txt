@@ -1,7 +1,3 @@
 set ecat up
 set ecat on
-set can up
-set can on
-set poselidar.mode 1
-set cruisecontrol.target_velocity 30
-set controller selfdriving
+set throttle.target_position 100

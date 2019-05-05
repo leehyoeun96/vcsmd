@@ -158,6 +158,7 @@ void _reg_process(char *msg)
         else if( strcmp(arg1, "off") == 0) message.param_val = 2;
         else if( strcmp(arg1, "down") == 0) message.param_val = 3;
         message.result_msg = arg1;
+        message.result_code = 0;
         goto done;
     }
     else if (regexec_with_args(&regex_set_obd, msg, 2, groups, arg1, NULL))
@@ -170,6 +171,7 @@ void _reg_process(char *msg)
         else if( strcmp(arg1, "off") == 0) message.param_val = 2;
         else if( strcmp(arg1, "down") == 0) message.param_val = 3;
         message.result_msg = arg1;
+        message.result_code = 0;
         goto done;
     }
     else if (regexec_with_args(&regex_set_can, msg, 2, groups, arg1, NULL))
@@ -182,6 +184,7 @@ void _reg_process(char *msg)
         else if( strcmp(arg1, "off") == 0) message.param_val = 2;
         else if( strcmp(arg1, "down") == 0) message.param_val = 3;
         message.result_msg = arg1;
+        message.result_code = 0;
         goto done;
     }
     else if (regexec_with_args(&regex_set_hvi, msg, 2, groups, arg1, NULL))
@@ -194,6 +197,7 @@ void _reg_process(char *msg)
         else if( strcmp(arg1, "off") == 0) message.param_val = 2;
         else if( strcmp(arg1, "down") == 0) message.param_val = 3;
         message.result_msg = arg1;
+        message.result_code = 0;
         goto done;
     }
     
@@ -207,6 +211,7 @@ void _reg_process(char *msg)
         else if( strcmp(arg1, "estop") == 0) message.param_val = 2;
         else if( strcmp(arg1, "selftest") == 0) message.param_val = 3;
         message.result_msg = arg1;
+        message.result_code = 0;
         goto done;
     }
     else if (regexec_with_args(&regex_set_controller, msg, 2, groups, arg1, NULL))
@@ -217,6 +222,7 @@ void _reg_process(char *msg)
         if( strcmp(arg1, "tunecruisecontrol") == 0) message.param_val = 0;
         else if( strcmp(arg1, "selfdriving") == 0) message.param_val = 1;
         message.result_msg = arg1;
+        message.result_code = 0;
         goto done;
     }
     else if (regexec_with_args(&regex_set, msg, 3, groups, arg1, arg2))
@@ -235,9 +241,11 @@ void _reg_process(char *msg)
         else if( strcmp(arg1, "steercontrol.target_angular_velocity") == 0) message.param_id = 15;
         message.param_val = atof(arg2);
         message.result_msg = arg1;
+        message.result_code = 0;
         goto done;
     }
     printf("Unknown command\n");
+    message.result_code = 1;
 
 done:
     return;

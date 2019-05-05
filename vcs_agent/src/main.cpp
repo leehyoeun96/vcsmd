@@ -40,21 +40,29 @@ double convert_mps_to_kmh(double linear_x)
 void sendtovcs(const vcs_agent::vcs::ConstPtr &input)
 {
     int bytecount;
+//    message *packet = new message;
     message packet;
-    packet.seq_no = input->seq_no;
+    char buffer[1000];
+     packet.seq_no = input->seq_no;
     packet.ack_no = input->ack_no;
     packet.cmd_code = input->cmd_code;
     packet.param_id = input->param_id;
     packet.param_val = input->param_val;
     packet.result_code = input->result_code;
-    sprintf(packet.result_msg, "%s", input->result_msg.c_str());
-//    packet.result_msg = static_cast<const char*>(input->result_msg.c_str());
-    cout<<"sendtovcs: "<<packet.result_msg<<endl;
+    strcpy(packet.result_msg, input->result_msg.c_str());
+cout << "sendtovcs: seq_no "<< packet.seq_no<<endl;
+cout << "sendtovcs: ack_no "<< packet.ack_no<<endl;
+cout << "sendtovcs: cmd_code "<< packet.cmd_code<<endl;
+cout << "sendtovcs: param_id "<< packet.param_id<<endl;
+cout << "sendtovcs: param_val "<< packet.param_val<<endl;
+cout << "sendtovcs: result_code "<< packet.result_code<<endl;
+cout << "sendtovcs: result_msg " << packet.result_msg<<endl;
 
-    if ((bytecount = send(vcsd_sd, &packet, sizeof(packet), 0)) == -1)
+    if ((bytecount = send(vcsd_sd,(char*)&packet, sizeof(message), 0)) == -1)
     {   
         fprintf(stderr, "Error sending data : %s\n", strerror(errno));
     }
+//    delete packet;
 }
 
 int main(int argc, char**argv)
@@ -73,12 +81,12 @@ int main(int argc, char**argv)
     struct sockaddr_in vcsd_addr;//sock addr for vcs
 
     //connect to vcsmd//
-    vcsmd_sd = socket(PF_INET, SOCK_STREAM, 0);
+/*    vcsmd_sd = socket(PF_INET, SOCK_STREAM, 0);
 
     memset(&vcsmd_addr, 0, sizeof(vcsmd_addr));
     vcsmd_addr.sin_family = PF_INET;
     vcsmd_addr.sin_port = htons(9002);
-    inet_aton("127.0.0.1", &vcsmd_addr.sin_addr);
+    inet_aton("192.168.0.8", &vcsmd_addr.sin_addr);
 
     if(connect(vcsmd_sd, (struct sockaddr *)&vcsmd_addr, sizeof(vcsmd_addr)) ==-1)
     {
@@ -86,7 +94,7 @@ int main(int argc, char**argv)
         return 0;
     }
     close(vcsmd_sd);
-
+*/
     //connect to vcsd//
     sleep(1);
     vcsd_sd = socket(PF_INET, SOCK_STREAM, 0);
@@ -94,6 +102,7 @@ int main(int argc, char**argv)
     memset(&vcsd_addr, 0, sizeof(vcsd_addr));
     vcsd_addr.sin_family = AF_INET;
     vcsd_addr.sin_port = htons(9000);
+    //inet_aton("192.168.0.8", &vcsd_addr.sin_addr);
     inet_aton("127.0.0.1", &vcsd_addr.sin_addr);
 
     if(connect(vcsd_sd, (struct sockaddr *)&vcsd_addr, sizeof(struct sockaddr_in)) ==-1)

@@ -123,31 +123,28 @@ namespace mManagerNS
 
  void mManager::settingVCS(string msg)
  {
-	string substr, subvalue;
-	string::size_type pos = NULL;
+	 string substr, subvalue;
+	 string::size_type pos = NULL;
+	 pos = msg.find_last_of(" ");
+	 cout << msg.substr(0,pos) <<endl;
+	 cout << msg.substr(pos+1) <<endl;
+	 substr = msg.substr(0,pos);
+	 subvalue = msg.substr(pos+1);
+
+	 if(substr.compare("pose lidar") == 0)
 	 {	
-		pos = msg.find_last_of(" ");
-		cout << msg.substr(0,pos) <<endl;
-		cout << msg.substr(pos+1) <<endl;
-		substr = msg.substr(0,pos);
-		subvalue = msg.substr(pos+1);
-		if(msg.compare("start vcs") == 0)
-		 {	
-			vcs_msg.command = msg;
-			vcs_msg.value = 0; 
-			pub_vcs_msg.publish(vcs_msg);
-		 }
-		else if(substr.compare("pose lidar") == 0)
-		 {	
-			vcs_msg.command = substr;
-			vcs_msg.value = atoi(subvalue.c_str()); 
-			pub_vcs_msg.publish(vcs_msg);
-		 }
-		else
-		 cout<<"wrong message!"<<endl;
-		cout << msg <<endl;
+		 vcs_msg.command = substr;
+		 vcs_msg.value = atoi(subvalue.c_str()); 
 	 }
-}
+	 else
+	 {	
+		 vcs_msg.command = msg;
+		 vcs_msg.value = 0; 
+	 }
+	 pub_vcs_msg.publish(vcs_msg);
+
+	 cout << msg <<endl;
+ }
 
  void mManager::callbackGetVCSack(const mission_manager::vcs_msg& msg)
  {
@@ -163,7 +160,6 @@ namespace mManagerNS
  void mManager::MainLoop()
  {
 	ros::Rate loop_rate(10);
-
 	for(int i = 0; i<2;i++)
 	{	
 		cout<<"set VCS and lidar (ex. start vcs, pose lidar [value])"<<endl;

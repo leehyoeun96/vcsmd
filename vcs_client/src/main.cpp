@@ -16,6 +16,7 @@ double convert_mps_to_kmh(double linear_x)
 
 void VCSstartupCallback(const vcs_client::mm::ConstPtr& msg)
 {
+    vcs_cmd_msg.result_code = 1;
     if((msg->command).compare("start vcs") == 0)//start vcs
     {
         FILE *fp = fopen("/home/rubicom/catkin_ws/src/vcs_client/start_up.txt","r");
@@ -27,9 +28,7 @@ void VCSstartupCallback(const vcs_client::mm::ConstPtr& msg)
             {
                 fgets(file_buf, sizeof(file_buf),fp);
                 if(feof(fp)) break;
-                printf("%s",file_buf);
                 vcs_cmd_msg = parse_handler(file_buf);
-                vcs_cmd_pub.publish(vcs_cmd_msg);
             }
             fclose(fp);
         }
@@ -43,12 +42,16 @@ void VCSstartupCallback(const vcs_client::mm::ConstPtr& msg)
         set_pose += dtos;
         set_pose += "\n";
         vcs_cmd_msg = parse_handler((char*)set_pose.c_str());
-        vcs_cmd_pub.publish(vcs_cmd_msg);
- 
-        cout<< msg->value <<endl;
     }
-    else 
-        cout << "can't parse vcs_startup msg"<<endl;
+    else
+    {
+        string cmd = msg->command;
+        cmd += "\n";
+        vcs_cmd_msg = parse_handler((char*)cmd.c_str());
+    }
+    if(vcs_cmd_msg.result_code == 0) vcs_cmd_pub.publish(vcs_cmd_msg);
+    else if(vcs_cmd_msg.result_code == 1)
+        cout<<"unknown command "<< msg->command<<endl;
 }
 void curVelCallback(const geometry_msgs::TwistStampedConstPtr &msg)
 {
