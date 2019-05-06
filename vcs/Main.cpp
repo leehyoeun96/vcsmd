@@ -293,7 +293,7 @@ int main(int argc, char *argv[])
         exit(1);
     }
 
-    readVehicleConfigs("/home/rubicom/vcsd/vcs/vehicle/i30.xml");
+    readVehicleConfigs("/home/rubicom/vcsmd/vcs/vehicle/i30.xml");
     syslog(LOG_ERR,"Connect client? : %d\n", get_cfParam("Main.use_socket"));
     if (signal(SIGINT, signalHandler) == SIG_ERR)
     {

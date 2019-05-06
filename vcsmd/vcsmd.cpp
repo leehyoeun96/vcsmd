@@ -1,6 +1,6 @@
 #include <stdlib.h>
 #include <stdio.h>
-#include <string.h>
+#include <strings.h>
 #include <signal.h>
 #include <syslog.h>
 #include <fcntl.h>
@@ -10,6 +10,7 @@
 #include <sys/socket.h>
 #include <sys/wait.h>
 #include <unistd.h>
+#include <iostream>
 #include <arpa/inet.h>
 #include <pthread.h>
 #include <syslog.h>
@@ -17,6 +18,7 @@
 #include <stdarg.h>
 #include <errno.h>
 
+using namespace std;
 #define LOCKFILE "/var/run/vcsmd.pid"
 #define LOCKMODE (S_IRUSR|S_IWUSR|S_IRGRP|S_IROTH)
 sigset_t mask;
@@ -158,7 +160,6 @@ void daemonize(const char *cmd)
     }
 }
 
-//extern char **environ;
 int main(int argc, char *argv[])
 {
     int err;
@@ -182,14 +183,6 @@ int main(int argc, char *argv[])
     sa.sa_flags = 0;
     if(sigaction(SIGHUP, &sa, NULL) < 0)
         syslog(LOG_ERR, "%s: can't restore SIGHUP default",cmd);
-   /* sigfillset(&mask);
-    if((err = pthread_sigmask(SIG_BLOCK, &mask, NULL)) != 0)
-        syslog(LOG_ERR, "SIG_BLOCK error");
-
-    err = pthread_create(&tid, NULL, thr_fn, 0);
-    if(err != 0)
-        syslog(LOG_ERR, "can't create thread");
-    */
     //////network programming////////
     struct sockaddr_in server_addr, client_addr;
     socklen_t clientlen = sizeof(client_addr);
@@ -215,11 +208,10 @@ int main(int argc, char *argv[])
     }
     //////network programming end/////
     char hup_cmd[11];
-    strcpy(hup_cmd,"kill -HUP ");
     char pid_buf[10];
     pid_t pid = 0;
-
-   while(1){
+   
+    while(1){
         if((fullsd = accept(halfsd, (struct sockaddr *)&client_addr, &clientlen)) == -1){
             syslog(LOG_ERR, "accept");
             exit(1);
@@ -228,6 +220,7 @@ int main(int argc, char *argv[])
         {
             if(pid != 0) 
             {
+                strcpy(hup_cmd,"kill -HUP ");
                 sprintf(pid_buf, "%d", pid);
                 strcat(hup_cmd,pid_buf);
                 system(hup_cmd);
@@ -245,8 +238,8 @@ int main(int argc, char *argv[])
                 syslog(LOG_ERR, "executing VCS\n");
                 close(fullsd);
                 close(halfsd);
-                //execl("/home/rubicom/vcsd/test", "./test", "", NULL);
-                execl("home/rubicom/vcsd/vcs/VCFserver_pc.exe", "./VCFserver_pc.exe", "", NULL);
+                //execl("home/rubicom/vcsmd/vcs/VCFserver_pc.exe", "./VCFserver_pc.exe", "", NULL);
+                execl("home/rubicom/vcsmd/control_server/VCFserver_pc.exe", "./VCFserver_pc.exe", "", NULL);
                 syslog(LOG_ERR, "execl failed to run VCS\n");
             }
             else close(fullsd);
