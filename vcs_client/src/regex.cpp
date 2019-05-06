@@ -12,7 +12,7 @@ regex_t regex_get;
 
 // regex with three args
 regex_t regex_set; //tvel tangle clidar llidar rlidar gearstick
-                   //steer throttle brake signtower buzzer
+//steer throttle brake signtower buzzer
 regex_t regex_set_ecat;
 regex_t regex_set_obd;
 regex_t regex_set_can;
@@ -69,7 +69,7 @@ void regfree_all()
 }
 
 int regexec_with_args(regex_t *regex, char *msg, int ngroups, regmatch_t *groups,
-                      char *arg1, char *arg2)
+        char *arg1, char *arg2)
 {
     int ret = regexec(regex, msg, ngroups, groups, 0);
     if (ret == 0)
@@ -133,32 +133,40 @@ void _reg_process(char *msg)
     }
     else if (regexec_with_args(&regex_homingpedals, msg, 0, NULL, NULL, NULL))
     {
-            //EthercatManageHandler("Controller", "HomingPedals", NULL);
-        cout << "check and enable(1) use_ecat in .xml" << endl;
-        //cout << ": homingpedals " << endl;
+        message.seq_no = seqno++; 
+        message.cmd_code = 17;
+        message.param_id = 0;
+        message.result_code = 0;
         goto done;
     }
     else if (regexec_with_args(&regex_ecatoff, msg, 0, NULL, NULL, NULL))
     {
-        //cout << ": ecatoff " << endl;
+        message.seq_no = seqno++; 
+        message.cmd_code = 18;
+        message.param_id = 0;
+        message.result_code = 0;
         goto done;
     }
     else if (regexec_with_args(&regex_get, msg, 2, groups, arg1, NULL))
     {
         goto done;
     }
-    
+
     else if (regexec_with_args(&regex_set_ecat, msg, 2, groups, arg1, NULL))
     {
         message.seq_no = seqno++; 
         message.cmd_code = 1;
         message.param_id = 0;
-        if( strcmp(arg1, "up") == 0) message.param_val = 0;
-        else if( strcmp(arg1, "on") == 0) message.param_val = 1;
-        else if( strcmp(arg1, "off") == 0) message.param_val = 2;
-        else if( strcmp(arg1, "down") == 0) message.param_val = 3;
-        message.result_msg = arg1;
         message.result_code = 0;
+        message.result_msg = arg1;
+        if( strcasecmp(arg1, "up") == 0) message.param_val = 0;
+        else if( strcasecmp(arg1, "on") == 0) message.param_val = 1;
+        else if( strcasecmp(arg1, "off") == 0) message.param_val = 2;
+        else if( strcasecmp(arg1, "down") == 0) message.param_val = 3;
+        else {
+            message.result_code = -1;
+            printf("Unknown command\n");
+        }
         goto done;
     }
     else if (regexec_with_args(&regex_set_obd, msg, 2, groups, arg1, NULL))
@@ -166,52 +174,68 @@ void _reg_process(char *msg)
         message.seq_no = seqno++; 
         message.cmd_code = 1;
         message.param_id = 1;
-        if( strcmp(arg1, "up") == 0) message.param_val = 0;
-        else if( strcmp(arg1, "on") == 0) message.param_val = 1;
-        else if( strcmp(arg1, "off") == 0) message.param_val = 2;
-        else if( strcmp(arg1, "down") == 0) message.param_val = 3;
-        message.result_msg = arg1;
         message.result_code = 0;
+        message.result_msg = arg1;
+        if( strcasecmp(arg1, "up") == 0) message.param_val = 0;
+        else if( strcasecmp(arg1, "on") == 0) message.param_val = 1;
+        else if( strcasecmp(arg1, "off") == 0) message.param_val = 2;
+        else if( strcasecmp(arg1, "down") == 0) message.param_val = 3;
+        else {
+            message.result_code = -1;
+            printf("Unknown command\n");
+        }
         goto done;
     }
     else if (regexec_with_args(&regex_set_can, msg, 2, groups, arg1, NULL))
     {
-         message.seq_no = seqno++; 
+        message.seq_no = seqno++; 
         message.cmd_code = 1;
         message.param_id = 2;
-        if( strcmp(arg1, "up") == 0) message.param_val = 0;
-        else if( strcmp(arg1, "on") == 0) message.param_val = 1;
-        else if( strcmp(arg1, "off") == 0) message.param_val = 2;
-        else if( strcmp(arg1, "down") == 0) message.param_val = 3;
-        message.result_msg = arg1;
         message.result_code = 0;
+        message.result_msg = arg1;
+        if( strcasecmp(arg1, "up") == 0) message.param_val = 0;
+        else if( strcasecmp(arg1, "on") == 0) message.param_val = 1;
+        else if( strcasecmp(arg1, "off") == 0) message.param_val = 2;
+        else if( strcasecmp(arg1, "down") == 0) message.param_val = 3;
+        else {
+            message.result_code = -1;
+            printf("Unknown command\n");
+        }
         goto done;
     }
     else if (regexec_with_args(&regex_set_hvi, msg, 2, groups, arg1, NULL))
     {
-          message.seq_no = seqno++; 
+        message.seq_no = seqno++; 
         message.cmd_code = 1;
         message.param_id = 3;
-        if( strcmp(arg1, "up") == 0) message.param_val = 0;
-        else if( strcmp(arg1, "on") == 0) message.param_val = 1;
-        else if( strcmp(arg1, "off") == 0) message.param_val = 2;
-        else if( strcmp(arg1, "down") == 0) message.param_val = 3;
-        message.result_msg = arg1;
         message.result_code = 0;
+        message.result_msg = arg1;
+        if( strcasecmp(arg1, "up") == 0) message.param_val = 0;
+        else if( strcasecmp(arg1, "on") == 0) message.param_val = 1;
+        else if( strcasecmp(arg1, "off") == 0) message.param_val = 2;
+        else if( strcasecmp(arg1, "down") == 0) message.param_val = 3;
+        else {
+            message.result_code = -1;
+            printf("Unknown command\n");
+        }
         goto done;
     }
-    
+
     else if (regexec_with_args(&regex_set_motion, msg, 2, groups, arg1, NULL))
     {
         message.seq_no = seqno++; 
         message.cmd_code = 1;
         message.param_id = 4;
-        if( strcmp(arg1, "pullover") == 0) message.param_val = 0;
-        else if( strcmp(arg1, "homingpedals") == 0) message.param_val = 1;
-        else if( strcmp(arg1, "estop") == 0) message.param_val = 2;
-        else if( strcmp(arg1, "selftest") == 0) message.param_val = 3;
-        message.result_msg = arg1;
         message.result_code = 0;
+        message.result_msg = arg1;
+        if( strcasecmp(arg1, "pullover") == 0) message.param_val = 0;
+        else if( strcasecmp(arg1, "homingpedals") == 0) message.param_val = 1;
+        else if( strcasecmp(arg1, "estop") == 0) message.param_val = 2;
+        else if( strcasecmp(arg1, "selftest") == 0) message.param_val = 3;
+        else {
+            message.result_code = -1;
+            printf("Unknown command\n");
+        }
         goto done;
     }
     else if (regexec_with_args(&regex_set_controller, msg, 2, groups, arg1, NULL))
@@ -219,33 +243,42 @@ void _reg_process(char *msg)
         message.seq_no = seqno++; 
         message.cmd_code = 1;
         message.param_id = 5;
-        if( strcmp(arg1, "tunecruisecontrol") == 0) message.param_val = 0;
-        else if( strcmp(arg1, "selfdriving") == 0) message.param_val = 1;
-        message.result_msg = arg1;
         message.result_code = 0;
+        message.result_msg = arg1;
+        if( strcasecmp(arg1, "tunecruisecontrol") == 0) message.param_val = 0;
+        else if( strcasecmp(arg1, "selfdriving") == 0) message.param_val = 1;
+        else {
+            message.result_code = -1;
+            printf("Unknown command\n");
+        }
         goto done;
     }
     else if (regexec_with_args(&regex_set, msg, 3, groups, arg1, arg2))
     {
         message.seq_no = seqno++; 
         message.cmd_code = 1;
-        if( strcmp(arg1, "throttle.target_position") == 0) message.param_id = 6;
-        else if( strcmp(arg1, "brake.target_position") == 0) message.param_id = 7;
-        else if( strcmp(arg1, "lidar.center_target_position") == 0) message.param_id = 8;
-        else if( strcmp(arg1, "lidar.left_target_position") == 0) message.param_id = 9;
-        else if( strcmp(arg1, "lidar.right_target_position") == 0) message.param_id = 10;
-        else if( strcmp(arg1, "poselidar.mode") == 0) message.param_id = 11;
-        else if( strcmp(arg1, "steerwheel.target_position") == 0) message.param_id = 12;
-        else if( strcmp(arg1, "gearstick.target_position") == 0) message.param_id = 13;
-        else if( strcmp(arg1, "cruisecontrol.target_velocity") == 0) message.param_id = 14;
-        else if( strcmp(arg1, "steercontrol.target_angular_velocity") == 0) message.param_id = 15;
-        message.param_val = atof(arg2);
-        message.result_msg = arg1;
         message.result_code = 0;
+        message.result_msg = arg1;
+        message.param_val = atof(arg2);
+        if( (strcasecmp(arg1, "throttle.target_position") == 0) |  (strcasecmp(arg1, "t.tpos") == 0) ) message.param_id = 6;
+        else if( strcasecmp(arg1, "brake.target_position") == 0 | (strcasecmp(arg1, "b.tpos") == 0) ) message.param_id = 7;
+        else if( strcasecmp(arg1, "lidar.center_target_position") == 0  | (strcasecmp(arg1, "l.ctpos") == 0)) message.param_id = 8;
+        else if( strcasecmp(arg1, "lidar.left_target_position") == 0 | (strcasecmp(arg1, "l.ltpos") == 0) )message.param_id = 9;
+        else if( strcasecmp(arg1, "lidar.right_target_position") == 0 | (strcasecmp(arg1, "l.rtpos") == 0) )message.param_id = 10;
+        else if( strcasecmp(arg1, "poselidar.mode") == 0 | (strcasecmp(arg1, "pl.mode") == 0)) message.param_id = 11;
+        else if( strcasecmp(arg1, "steerwheel.target_position") == 0 | (strcasecmp(arg1, "s.tpos") == 0)) message.param_id = 12;
+        else if( strcasecmp(arg1, "gearstick.target_position") == 0 | (strcasecmp(arg1, "g.tpos") == 0)) message.param_id = 13;
+        else if( strcasecmp(arg1, "cruisecontrol.target_velocity") == 0 | (strcasecmp(arg1, "cc.tvelo") == 0)) message.param_id = 14;
+        else if( strcasecmp(arg1, "steercontrol.target_angular_velocity") == 0 | (strcasecmp(arg1, "sc.tanvelo") == 0)) message.param_id = 15;
+        else if( strcasecmp(arg1, "hvi.mode") == 0) message.param_id = 16;
+        else {
+            message.result_code = -1;
+            printf("Unknown command\n");
+        } 
         goto done;
     }
     printf("Unknown command\n");
-    message.result_code = 1;
+    message.result_code = -1;
 
 done:
     return;

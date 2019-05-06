@@ -3,5 +3,5 @@ uint32 ack_no
 uint16 cmd_code
 uint16 param_id
 float64 param_val  
-uint16 result_code
+int16 result_code
 string result_msg 

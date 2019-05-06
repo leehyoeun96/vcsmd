@@ -9,6 +9,7 @@
 #include <arpa/inet.h>
 #include <signal.h>
 #include "ros/ros.h"
+#include <ros/package.h>
 #include <geometry_msgs/TwistStamped.h>
 #include "vcs_client/autoware.h"
 #include "vcs_client/agent.h"

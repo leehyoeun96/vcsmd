@@ -16,7 +16,11 @@ double convert_mps_to_kmh(double linear_x)
 
 void VCSstartupCallback(const vcs_client::mm::ConstPtr& msg)
 {
-    vcs_cmd_msg.result_code = 1;
+    vcs_cmd_msg.result_code = 0;
+//    std::string path = ros::package::getPath("vcs_client");
+/*    using package::V_string;
+    V_string pacakges;
+    ros::package::getAll(packages);*/
     if((msg->command).compare("start vcs") == 0)//start vcs
     {
         FILE *fp = fopen("/home/rubicom/catkin_ws/src/vcs_client/start_up.txt","r");
@@ -45,13 +49,14 @@ void VCSstartupCallback(const vcs_client::mm::ConstPtr& msg)
     }
     else
     {
+        cout<<"main callback:msg->result_code "<< vcs_cmd_msg.result_code <<endl;
         string cmd = msg->command;
         cmd += "\n";
         vcs_cmd_msg = parse_handler((char*)cmd.c_str());
     }
     if(vcs_cmd_msg.result_code == 0) vcs_cmd_pub.publish(vcs_cmd_msg);
-    else if(vcs_cmd_msg.result_code == 1)
-        cout<<"unknown command "<< msg->command<<endl;
+    else if(vcs_cmd_msg.result_code == -1)
+        cout<<"main callback:unknown command = "<< msg->command<<endl;
 }
 void curVelCallback(const geometry_msgs::TwistStampedConstPtr &msg)
 {
@@ -90,6 +95,7 @@ int main(int argc, char**argv)
     vcs_cmd_pub = nh.advertise<vcs_client::agent>("/startup_cmd",100);
     vcs_val_pub = nh.advertise<vcs_client::agent>("/target_val",100);
     
+    cout<<"hello!"<<endl;
    while(ros::ok())
     {
         ros::spinOnce();

@@ -20,8 +20,6 @@ using namespace std;
 
 int vcsmd_sd;
 int vcsd_sd;
-int seq_no=0;
-double buffer[2];
 typedef struct _message
 {
     int seq_no;
@@ -81,7 +79,7 @@ int main(int argc, char**argv)
     struct sockaddr_in vcsd_addr;//sock addr for vcs
 
     //connect to vcsmd//
-/*    vcsmd_sd = socket(PF_INET, SOCK_STREAM, 0);
+    vcsmd_sd = socket(PF_INET, SOCK_STREAM, 0);
 
     memset(&vcsmd_addr, 0, sizeof(vcsmd_addr));
     vcsmd_addr.sin_family = PF_INET;
@@ -94,7 +92,7 @@ int main(int argc, char**argv)
         return 0;
     }
     close(vcsmd_sd);
-*/
+
     //connect to vcsd//
     sleep(1);
     vcsd_sd = socket(PF_INET, SOCK_STREAM, 0);
@@ -102,8 +100,8 @@ int main(int argc, char**argv)
     memset(&vcsd_addr, 0, sizeof(vcsd_addr));
     vcsd_addr.sin_family = AF_INET;
     vcsd_addr.sin_port = htons(9000);
-    //inet_aton("192.168.0.8", &vcsd_addr.sin_addr);
-    inet_aton("127.0.0.1", &vcsd_addr.sin_addr);
+    inet_aton("192.168.0.8", &vcsd_addr.sin_addr);
+    //inet_aton("127.0.0.1", &vcsd_addr.sin_addr);
 
     if(connect(vcsd_sd, (struct sockaddr *)&vcsd_addr, sizeof(struct sockaddr_in)) ==-1)
     {

@@ -17,6 +17,7 @@ int main(int argc, char** argv)
     ros::Publisher kbd_pub = nh.advertise<vcs_kbd::Message>("/vcs_msg",100);
     ros::Rate loop_rate(10);
     string cmd;
+    cout<<"hello!"<<endl;
     while(ros::ok())
     {
         getline(cin,cmd);
