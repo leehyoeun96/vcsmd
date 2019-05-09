@@ -134,16 +134,16 @@ void _reg_process(char *msg)
     else if (regexec_with_args(&regex_homingpedals, msg, 0, NULL, NULL, NULL))
     {
         message.seq_no = seqno++; 
-        message.cmd_code = 17;
-        message.param_id = 0;
+        message.cmd_code = 1;
+        message.param_id = 17;
         message.result_code = 0;
         goto done;
     }
     else if (regexec_with_args(&regex_ecatoff, msg, 0, NULL, NULL, NULL))
     {
         message.seq_no = seqno++; 
-        message.cmd_code = 18;
-        message.param_id = 0;
+        message.cmd_code = 1;
+        message.param_id = 18;
         message.result_code = 0;
         goto done;
     }
@@ -232,6 +232,7 @@ void _reg_process(char *msg)
         else if( strcasecmp(arg1, "homingpedals") == 0) message.param_val = 1;
         else if( strcasecmp(arg1, "estop") == 0) message.param_val = 2;
         else if( strcasecmp(arg1, "selftest") == 0) message.param_val = 3;
+        else if( strcasecmp(arg1, "fixsteer") == 0) message.param_val = 4;
         else {
             message.result_code = -1;
             printf("Unknown command\n");

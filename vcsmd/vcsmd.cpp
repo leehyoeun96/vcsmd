@@ -239,7 +239,7 @@ int main(int argc, char *argv[])
                 close(fullsd);
                 close(halfsd);
                 //execl("home/rubicom/vcsmd/vcs/VCFserver_pc.exe", "./VCFserver_pc.exe", "", NULL);
-                execl("home/rubicom/vcsmd/control_server/VCFserver_pc.exe", "./VCFserver_pc.exe", "", NULL);
+                execl("/home/rubicom/vcsmd/control_server/VCFserver_pc.exe", "./VCFserver_pc.exe", "", NULL);
                 syslog(LOG_ERR, "execl failed to run VCS\n");
             }
             else close(fullsd);
