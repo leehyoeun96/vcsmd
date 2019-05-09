@@ -84,7 +84,7 @@ int main(int argc, char**argv)
     memset(&vcsmd_addr, 0, sizeof(vcsmd_addr));
     vcsmd_addr.sin_family = PF_INET;
     vcsmd_addr.sin_port = htons(9002);
-    inet_aton("192.168.0.8", &vcsmd_addr.sin_addr);
+    inet_aton("192.168.0.4", &vcsmd_addr.sin_addr);
 
     if(connect(vcsmd_sd, (struct sockaddr *)&vcsmd_addr, sizeof(vcsmd_addr)) ==-1)
     {
@@ -100,7 +100,7 @@ int main(int argc, char**argv)
     memset(&vcsd_addr, 0, sizeof(vcsd_addr));
     vcsd_addr.sin_family = AF_INET;
     vcsd_addr.sin_port = htons(9000);
-    inet_aton("192.168.0.8", &vcsd_addr.sin_addr);
+    inet_aton("192.168.0.4", &vcsd_addr.sin_addr);
     //inet_aton("127.0.0.1", &vcsd_addr.sin_addr);
 
     if(connect(vcsd_sd, (struct sockaddr *)&vcsd_addr, sizeof(struct sockaddr_in)) ==-1)
