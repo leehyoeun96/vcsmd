@@ -1,4 +1,4 @@
-#include "vcs_client/vcs_client.h"
+#include "vcs_agent/vcs_agent.h"
 
 // regex with one arg
 regex_t regex_help;
@@ -22,7 +22,7 @@ regex_t regex_set_param;
 regex_t regex_set_motion;
 regex_t regex_set_controller;
 
-vcs_client::agent message;
+message umsg;
 int seqno =0;
 #define MAX_BUFFER 1024
 void regcomp_all()
@@ -111,7 +111,7 @@ void _reg_process(char *msg)
     regmatch_t groups[3];
     char arg1[128];
     char arg2[128];
-    chomp(msg, strlen(msg)); // remove \r\n from message
+    chomp(msg, strlen(msg)); // remove \r\n from msg
 
     if (regexec_with_args(&regex_help, msg, 0, NULL, NULL, NULL))
     {
@@ -133,103 +133,98 @@ void _reg_process(char *msg)
     }
     else if (regexec_with_args(&regex_homingpedals, msg, 0, NULL, NULL, NULL))
     {
-        message.seq_no = seqno++; 
-        message.cmd_code = 1;
-        message.param_id = 17;
-        message.result_code = 0;
-        message.result_msg = msg;
-        message.param_val = 0;
+        umsg.seq_no = seqno++; 
+        umsg.cmd_code = 1;
+        umsg.param_id = 0;
+        umsg.result_code = 0;
+        strcpy(umsg.result_msg, "homingpedals");
+        umsg.param_val = 0;
         goto done;
     }
     else if (regexec_with_args(&regex_ecatoff, msg, 0, NULL, NULL, NULL))
     {
-        message.seq_no = seqno++; 
-        message.cmd_code = 1;
-        message.param_id = 18;
-        message.result_code = 0;
-        message.result_msg = msg;
-        message.param_val = 0;
+        umsg.seq_no = seqno++; 
+        umsg.cmd_code = 1;
+        umsg.param_id = 1;
+        umsg.result_code = 0;
+        strcpy(umsg.result_msg, "ecatoff");
+        umsg.param_val = 0;
         goto done;
     }
     else if (regexec_with_args(&regex_get, msg, 2, groups, arg1, NULL))
     {
-        message.seq_no = seqno++; 
-        message.cmd_code = 0;
-        message.result_code = 0;
-        message.result_msg = msg;
-        message.param_val = 0;
-        if( strcasecmp(arg1, "CAN.cluster_odometer") == 0) message.param_id = 0;
-        else {
-            message.result_code = -1;
-            printf("Unknown command\n");
-        }
+        umsg.seq_no = seqno++; 
+        umsg.cmd_code = 0;
+        umsg.result_code = 0;
+        strcpy(umsg.result_msg, arg1);
+        umsg.param_val = 0;
         goto done;
     }
 
     else if (regexec_with_args(&regex_set_ecat, msg, 2, groups, arg1, NULL))
     {
-        message.seq_no = seqno++; 
-        message.cmd_code = 1;
-        message.param_id = 0;
-        message.result_code = 0;
-        message.result_msg = msg;
-        if( strcasecmp(arg1, "up") == 0) message.param_val = 0;
-        else if( strcasecmp(arg1, "on") == 0) message.param_val = 1;
-        else if( strcasecmp(arg1, "off") == 0) message.param_val = 2;
-        else if( strcasecmp(arg1, "down") == 0) message.param_val = 3;
+        umsg.seq_no = seqno++; 
+        umsg.cmd_code = 1;
+        umsg.param_id = 2;
+        umsg.result_code = 0;
+        strcpy(umsg.result_msg, arg1);
+        if( strcasecmp(arg1, "up") == 0) umsg.param_val = 0;
+        else if( strcasecmp(arg1, "on") == 0) umsg.param_val = 1;
+        else if( strcasecmp(arg1, "off") == 0) umsg.param_val = 2;
+        else if( strcasecmp(arg1, "down") == 0) umsg.param_val = 3;
         else {
-            message.result_code = -1;
+            umsg.result_code = -1;
             printf("Unknown command\n");
         }
         goto done;
     }
     else if (regexec_with_args(&regex_set_obd, msg, 2, groups, arg1, NULL))
     {
-        message.seq_no = seqno++; 
-        message.cmd_code = 1;
-        message.param_id = 1;
-        message.result_code = 0;
-        message.result_msg = msg;
-        if( strcasecmp(arg1, "up") == 0) message.param_val = 0;
-        else if( strcasecmp(arg1, "on") == 0) message.param_val = 1;
-        else if( strcasecmp(arg1, "off") == 0) message.param_val = 2;
-        else if( strcasecmp(arg1, "down") == 0) message.param_val = 3;
+        umsg.seq_no = seqno++; 
+        umsg.cmd_code = 1;
+        umsg.param_id = 3;
+        umsg.result_code = 0;
+        strcpy(umsg.result_msg, arg1);
+        if( strcasecmp(arg1, "up") == 0) umsg.param_val = 0;
+        else if( strcasecmp(arg1, "on") == 0) umsg.param_val = 1;
+        else if( strcasecmp(arg1, "off") == 0) umsg.param_val = 2;
+        else if( strcasecmp(arg1, "down") == 0) umsg.param_val = 3;
         else {
-            message.result_code = -1;
+            umsg.result_code = -1;
             printf("Unknown command\n");
         }
         goto done;
     }
     else if (regexec_with_args(&regex_set_can, msg, 2, groups, arg1, NULL))
     {
-        message.seq_no = seqno++; 
-        message.cmd_code = 1;
-        message.param_id = 2;
-        message.result_code = 0;
-        message.result_msg = msg;
-        if( strcasecmp(arg1, "up") == 0) message.param_val = 0;
-        else if( strcasecmp(arg1, "on") == 0) message.param_val = 1;
-        else if( strcasecmp(arg1, "off") == 0) message.param_val = 2;
-        else if( strcasecmp(arg1, "down") == 0) message.param_val = 3;
+        umsg.seq_no = seqno++; 
+        umsg.cmd_code = 1;
+        umsg.param_id = 4;
+        umsg.result_code = 0;
+        strcpy(umsg.result_msg, arg1);
+        if( strcasecmp(arg1, "up") == 0) umsg.param_val = 0;
+        else if( strcasecmp(arg1, "on") == 0) umsg.param_val = 1;
+        else if( strcasecmp(arg1, "off") == 0) umsg.param_val = 2;
+        else if( strcasecmp(arg1, "down") == 0) umsg.param_val = 3;
         else {
-            message.result_code = -1;
+            umsg.result_code = -1;
             printf("Unknown command\n");
         }
         goto done;
     }
     else if (regexec_with_args(&regex_set_hvi, msg, 2, groups, arg1, NULL))
     {
-        message.seq_no = seqno++; 
-        message.cmd_code = 1;
-        message.param_id = 3;
-        message.result_code = 0;
-        message.result_msg = msg;
-        if( strcasecmp(arg1, "up") == 0) message.param_val = 0;
-        else if( strcasecmp(arg1, "on") == 0) message.param_val = 1;
-        else if( strcasecmp(arg1, "off") == 0) message.param_val = 2;
-        else if( strcasecmp(arg1, "down") == 0) message.param_val = 3;
+        umsg.seq_no = seqno++; 
+        umsg.cmd_code = 1;
+        umsg.param_id = 5;
+        umsg.result_code = 0;
+        strcpy(umsg.result_msg, arg1);
+        if( strcasecmp(arg1, "up") == 0) umsg.param_val = 0;
+        else if( strcasecmp(arg1, "on") == 0) umsg.param_val = 1;
+        else if( strcasecmp(arg1, "off") == 0) umsg.param_val = 2;
+        else if( strcasecmp(arg1, "down") == 0) umsg.param_val = 3;
         else {
-            message.result_code = -1;
+            umsg.result_code = -1;
             printf("Unknown command\n");
         }
         goto done;
@@ -237,63 +232,66 @@ void _reg_process(char *msg)
 
     else if (regexec_with_args(&regex_set_motion, msg, 2, groups, arg1, NULL))
     {
-        message.seq_no = seqno++; 
-        message.cmd_code = 1;
-        message.param_id = 4;
-        message.result_code = 0;
-        message.result_msg = msg;
-        if( strcasecmp(arg1, "pullover") == 0) message.param_val = 0;
-        else if( strcasecmp(arg1, "homingpedals") == 0) message.param_val = 1;
-        else if( strcasecmp(arg1, "estop") == 0) message.param_val = 2;
-        else if( strcasecmp(arg1, "selftest") == 0) message.param_val = 3;
-        else if( strcasecmp(arg1, "fixsteer") == 0) message.param_val = 4;
+        umsg.seq_no = seqno++; 
+        umsg.cmd_code = 1;
+        umsg.param_id = 6;
+        umsg.result_code = 0;
+        strcpy(umsg.result_msg, arg1);
+        if( strcasecmp(arg1, "pullover") == 0) umsg.param_val = 0;
+        else if( strcasecmp(arg1, "homingpedals") == 0) umsg.param_val = 1;
+        else if( strcasecmp(arg1, "estop") == 0) umsg.param_val = 2;
+        else if( strcasecmp(arg1, "selftest") == 0) umsg.param_val = 3;
+        else if( strcasecmp(arg1, "fixsteer") == 0) umsg.param_val = 4;
+        else if( strcasecmp(arg1, "ready2start") == 0) umsg.param_val = 5;
         else {
-            message.result_code = -1;
+            umsg.result_code = -1;
             printf("Unknown command\n");
         }
         goto done;
     }
     else if (regexec_with_args(&regex_set_controller, msg, 2, groups, arg1, NULL))
     {
-        message.seq_no = seqno++; 
-        message.cmd_code = 1;
-        message.param_id = 5;
-        message.result_code = 0;
-        message.result_msg = msg;
-        if( strcasecmp(arg1, "tunecruisecontrol") == 0) message.param_val = 0;
-        else if( strcasecmp(arg1, "selfdriving") == 0) message.param_val = 1;
+        umsg.seq_no = seqno++; 
+        umsg.cmd_code = 1;
+        umsg.param_id = 7;
+        umsg.result_code = 0;
+        strcpy(umsg.result_msg, arg1);
+        if( strcasecmp(arg1, "tunecruisecontrol") == 0) umsg.param_val = 0;
+        else if( strcasecmp(arg1, "selfdriving") == 0) umsg.param_val = 1;
+        else if( strcasecmp(arg1, "avc") == 0) umsg.param_val = 2;
         else {
-            message.result_code = -1;
+            umsg.result_code = -1;
             printf("Unknown command\n");
         }
         goto done;
     }
     else if (regexec_with_args(&regex_set, msg, 3, groups, arg1, arg2))
     {
-        message.seq_no = seqno++; 
-        message.cmd_code = 1;
-        message.result_code = 0;
-        message.result_msg = msg;
-        message.param_val = atof(arg2);
-        if( (strcasecmp(arg1, "throttle.target_position") == 0) |  (strcasecmp(arg1, "t.tpos") == 0) ) message.param_id = 6;
-        else if( strcasecmp(arg1, "brake.target_position") == 0 | (strcasecmp(arg1, "b.tpos") == 0) ) message.param_id = 7;
-        else if( strcasecmp(arg1, "lidar.center_target_position") == 0  | (strcasecmp(arg1, "l.ctpos") == 0)) message.param_id = 8;
-        else if( strcasecmp(arg1, "lidar.left_target_position") == 0 | (strcasecmp(arg1, "l.ltpos") == 0) )message.param_id = 9;
-        else if( strcasecmp(arg1, "lidar.right_target_position") == 0 | (strcasecmp(arg1, "l.rtpos") == 0) )message.param_id = 10;
-        else if( strcasecmp(arg1, "poselidar.mode") == 0 | (strcasecmp(arg1, "pl.mode") == 0)) message.param_id = 11;
-        else if( strcasecmp(arg1, "steerwheel.target_position") == 0 | (strcasecmp(arg1, "s.tpos") == 0)) message.param_id = 12;
-        else if( strcasecmp(arg1, "gearstick.target_position") == 0 | (strcasecmp(arg1, "g.tpos") == 0)) message.param_id = 13;
-        else if( strcasecmp(arg1, "cruisecontrol.target_velocity") == 0 | (strcasecmp(arg1, "cc.tvelo") == 0)) message.param_id = 14;
-        else if( strcasecmp(arg1, "steercontrol.target_angular_velocity") == 0 | (strcasecmp(arg1, "sc.tanvelo") == 0)) message.param_id = 15;
-        else if( strcasecmp(arg1, "hvi.mode") == 0) message.param_id = 16;
+        umsg.seq_no = seqno++; 
+        umsg.cmd_code = 1;
+        umsg.result_code = 0;
+        strcpy(umsg.result_msg, arg1);
+        umsg.param_val = atof(arg2);
+        if( (strcasecmp(arg1, "throttle.target_position") == 0) |  (strcasecmp(arg1, "t.tpos") == 0) ) umsg.param_id = 8;
+        else if( strcasecmp(arg1, "brake.target_position") == 0 | (strcasecmp(arg1, "b.tpos") == 0) ) umsg.param_id = 9;
+        else if( strcasecmp(arg1, "lidar.center_target_position") == 0  | (strcasecmp(arg1, "l.ctpos") == 0)) umsg.param_id = 10;
+        else if( strcasecmp(arg1, "lidar.left_target_position") == 0 | (strcasecmp(arg1, "l.ltpos") == 0) )umsg.param_id = 11;
+        else if( strcasecmp(arg1, "lidar.right_target_position") == 0 | (strcasecmp(arg1, "l.rtpos") == 0) )umsg.param_id = 12;
+        else if( strcasecmp(arg1, "poselidar.mode") == 0 | (strcasecmp(arg1, "pl.mode") == 0)) umsg.param_id = 13;
+        else if( strcasecmp(arg1, "steerwheel.target_position") == 0 | (strcasecmp(arg1, "s.tpos") == 0)) umsg.param_id = 14;
+        else if( strcasecmp(arg1, "gearstick.target_position") == 0 | (strcasecmp(arg1, "g.tpos") == 0)) umsg.param_id = 15;
+        else if( strcasecmp(arg1, "cruisecontrol.target_velocity") == 0 | (strcasecmp(arg1, "cc.tvelo") == 0)) umsg.param_id = 16;
+        else if( strcasecmp(arg1, "steercontrol.target_angular_velocity") == 0 | (strcasecmp(arg1, "sc.tanvelo") == 0)) umsg.param_id = 17;
+        else if( strcasecmp(arg1, "hvi.mode") == 0) umsg.param_id = 18;
+        else if( strcasecmp(arg1, "CAN.publish_to_agent") == 0) umsg.param_id = 19;
         else {
-            message.result_code = -1;
+            umsg.result_code = -1;
             printf("Unknown command\n");
         } 
         goto done;
     }
     printf("Unknown command\n");
-    message.result_code = -1;
+    umsg.result_code = -1;
 
 done:
     return;
@@ -311,7 +309,7 @@ void print_string(char *p)
         printf("%u_", (unsigned char)*p++);
     printf("\n");
 }
-vcs_client::agent parse_handler(char* file_buf)
+message parse_handler(char* file_buf)
 {
     char buf[MAX_BUFFER], buffer[MAX_BUFFER];
     int nread, nconsumed, totread = 0;
@@ -338,5 +336,5 @@ vcs_client::agent parse_handler(char* file_buf)
             printf("reg_process fail");
         printf("parse_handler: %s\n", cpos);
     }
-    return message;
+    return umsg;
 }

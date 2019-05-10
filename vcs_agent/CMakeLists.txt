@@ -39,12 +39,11 @@ add_compile_options(-std=c++11)
             ${catkin_INCLUDE_DIRS}
             )
 
-add_executable(${PROJECT_NAME} src/main.cpp)
+add_executable(${PROJECT_NAME} src/main.cpp src/regex.cpp)
 add_dependencies(${PROJECT_NAME} vcs_agent_generate_messages_cpp)
-
-    target_link_libraries(${PROJECT_NAME}
-            ${catkin_LIBRARIES}
-            )
+target_link_libraries(${PROJECT_NAME}
+${catkin_LIBRARIES}
+)
 
 ## System dependencies are found with CMake's conventions
 # find_package(Boost REQUIRED COMPONENTS system)

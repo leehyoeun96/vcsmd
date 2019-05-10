@@ -1,77 +1,127 @@
-#include <stdio.h>
-#include <errno.h>
-#include <stdlib.h>
-#include <string.h>
-#include <sys/socket.h>
-#include <sys/types.h>
-#include <sys/epoll.h>
-#include <arpa/inet.h>
-#include <sys/wait.h>
-#include <netinet/in.h>
-#include <fcntl.h>
-#include <unistd.h>
-#include <arpa/inet.h>
-#include "ros/ros.h"
-#include <geometry_msgs/TwistStamped.h>
-#include "vcs_agent/vcs.h"
-using namespace std;
-#define BUF_SIZE 255 
+#include "vcs_agent/vcs_agent.h" 
 #define MAX_EVENTS 10 
+#define BUF_SIZE 255 
+#define IP_ADDR "127.0.0.1"
 
 int vcsmd_sd;
 int vcsd_sd;
-typedef struct _message
-{
-    int seq_no;
-    int ack_no;
-    int cmd_code;//0 means get / 1 means set
-    int param_id;//0 means target velocity/ 1 means target omega//temporally
-    double param_val;//used as reply for get
-    int result_code;//result of cmd(0 means success)
-    char result_msg[100];//infor/warning/error msg
-}message;
+double buffer[2];
 
 double convert_mps_to_kmh(double linear_x)
 {
     return linear_x * 3.6;
 }
-void sendtovcs(const vcs_agent::vcs::ConstPtr &input)
-{
-    int bytecount;
-//    message *packet = new message;
-    message packet;
-    char buffer[1000];
-     packet.seq_no = input->seq_no;
-    packet.ack_no = input->ack_no;
-    packet.cmd_code = input->cmd_code;
-    packet.param_id = input->param_id;
-    packet.param_val = input->param_val;
-    packet.result_code = input->result_code;
-    strcpy(packet.result_msg, input->result_msg.c_str());
-cout << "sendtovcs: seq_no "<< packet.seq_no<<endl;
-cout << "sendtovcs: ack_no "<< packet.ack_no<<endl;
-cout << "sendtovcs: cmd_code "<< packet.cmd_code<<endl;
-cout << "sendtovcs: param_id "<< packet.param_id<<endl;
-cout << "sendtovcs: param_val "<< packet.param_val<<endl;
-cout << "sendtovcs: result_code "<< packet.result_code<<endl;
-cout << "sendtovcs: result_msg " << packet.result_msg<<endl;
 
-    if ((bytecount = send(vcsd_sd,(char*)&packet, sizeof(message), 0)) == -1)
-    {   
-        fprintf(stderr, "Error sending data : %s\n", strerror(errno));
+void sendtovcs(message *msg)
+{
+    int bytecount = 0;
+    if(msg->result_code == 0)
+    { 
+        cout << "sendtovcs: seq_no "<<msg->seq_no<<endl;
+        cout << "sendtovcs: ack_no "<< msg->ack_no<<endl;
+        cout << "sendtovcs: cmd_code "<< msg->cmd_code<<endl;
+        cout << "sendtovcs: param_id "<< msg->param_id<<endl;
+        cout << "sendtovcs: param_val "<<msg->param_val<<endl;
+        cout << "sendtovcs: result_code "<< msg->result_code<<endl;
+        cout << "sendtovcs: result_msg " << msg->result_msg<<endl;
+        cout << "///////////////////"<<endl;
+
+        if ((bytecount = send(vcsd_sd,(char*)msg, sizeof(message), 0)) == -1)
+        {   
+            fprintf(stderr, "Error sending data : %s\n", strerror(errno));
+        }
     }
-//    delete packet;
+    else if(msg->result_code == -1)
+        cout<<"sendtovcs: unknown command"<<endl;
+}
+void VCSstartupCallback(const vcs_agent::Message1::ConstPtr& msg)
+{   
+    message vcs_cmd_msg;
+    vcs_cmd_msg.result_code = 0;
+    //    std::string path = ros::package::getPath("vcs_agent");
+    /*    using package::V_string;
+          V_string pacakges;
+          ros::package::getAll(packages);*/
+    if((msg->command).compare("start vcs") == 0)//start vcs
+    {
+        FILE *fp = fopen("/home/rubicom/catkin_ws/src/vcs_agent/start_up.txt","r");
+
+        char file_buf[50]={0,};
+        if(fp != NULL)
+        {
+            while(1)
+            {   
+                fgets(file_buf, sizeof(file_buf),fp);
+                if(feof(fp)) break;
+                vcs_cmd_msg = parse_handler(file_buf);
+                sendtovcs(&vcs_cmd_msg);
+            }
+            fclose(fp);
+        }
+        else cout << "can't read file" <<endl;
+    }
+    else if((msg->command).compare("pose lidar") == 0) //pose lidar
+    {
+        string set_pose ("set poselidar.mode ");
+        string dtos; 
+        dtos = to_string(msg->value);
+        set_pose += dtos;
+        set_pose += "\n";
+        vcs_cmd_msg = parse_handler((char*)set_pose.c_str());
+        sendtovcs(&vcs_cmd_msg);
+    }
+    else
+    {
+        cout<<"startup callback: msg->result_code "<< vcs_cmd_msg.result_code <<endl;
+        string cmd = msg->command;
+        cmd += "\n";
+        vcs_cmd_msg = parse_handler((char*)cmd.c_str());
+        sendtovcs(&vcs_cmd_msg);
+    }
+}
+
+void twistCallback(const geometry_msgs::TwistStampedConstPtr &input_msg)
+{
+    message packet;
+    int bytecount = 0;
+
+    string set_vel ("set cruisecontrol.target_velocity ");
+    string set_ang ("set steercontrol.target_angular_velocity ");
+    string dtos;
+
+    buffer[0] = convert_mps_to_kmh(input_msg->twist.linear.x);
+    buffer[1] = input_msg->twist.angular.z;
+
+    dtos = to_string(buffer[0]);
+    set_vel += dtos;
+    set_vel += "\n";
+    packet = parse_handler((char*)set_vel.c_str());
+    sendtovcs(&packet);
+    
+    dtos = to_string(buffer[1]);
+    set_ang += dtos;
+    set_ang += "\n";
+    packet = parse_handler((char*)set_ang.c_str());
+    sendtovcs(&packet);
+}
+
+void processRecvmsg(message *msg)
+{
+    cout << "processRecvmsg: param_id "<< msg->param_id<<endl;
+    cout << "processRecvmsg: result_msg "<< msg->result_msg<<endl;
 }
 
 int main(int argc, char**argv)
 {
     ros::init(argc, argv,"vcs_agent");
     ros::NodeHandle nh;
-
-    ros::Subscriber agent_sub = nh.subscribe("/target_val",100,sendtovcs);
-    ros::Subscriber agent_sub1 = nh.subscribe("/startup_cmd",100,sendtovcs);
-    ros::Publisher agent_pub = nh.advertise<vcs_agent::vcs>("/vcs_ack", 10);
     vcs_agent::vcs vcs_ack;
+
+    regcomp_all();
+    ros::Subscriber client_sub = nh.subscribe("/twist_cmd",1,twistCallback);
+    ros::Subscriber vcs_msg_sub = nh.subscribe("/vcs_msg",1,VCSstartupCallback);
+
+    ros::Publisher agent_pub = nh.advertise<vcs_agent::vcs>("/vcs_ack", 10);
 
     message read_buffer;
 
@@ -84,7 +134,7 @@ int main(int argc, char**argv)
     memset(&vcsmd_addr, 0, sizeof(vcsmd_addr));
     vcsmd_addr.sin_family = PF_INET;
     vcsmd_addr.sin_port = htons(9002);
-    inet_aton("192.168.0.4", &vcsmd_addr.sin_addr);
+    inet_aton(IP_ADDR, &vcsmd_addr.sin_addr);
 
     if(connect(vcsmd_sd, (struct sockaddr *)&vcsmd_addr, sizeof(vcsmd_addr)) ==-1)
     {
@@ -100,8 +150,7 @@ int main(int argc, char**argv)
     memset(&vcsd_addr, 0, sizeof(vcsd_addr));
     vcsd_addr.sin_family = AF_INET;
     vcsd_addr.sin_port = htons(9000);
-    inet_aton("192.168.0.4", &vcsd_addr.sin_addr);
-    //inet_aton("127.0.0.1", &vcsd_addr.sin_addr);
+    inet_aton(IP_ADDR, &vcsd_addr.sin_addr);
 
     if(connect(vcsd_sd, (struct sockaddr *)&vcsd_addr, sizeof(struct sockaddr_in)) ==-1)
     {
@@ -143,13 +192,16 @@ int main(int argc, char**argv)
                     printf("Closed client: %d\n",evs[i].data.fd);
                 }
                 else{
-                    cout << "seq_no "<< read_buffer.seq_no<<endl;
-                    cout << "ack_no "<< read_buffer.ack_no<<endl;
-                    cout << "cmd_code "<<read_buffer.cmd_code<<endl;
-                    cout << "param_id "<< read_buffer.param_id<<endl;
-                    cout << "param_val "<< read_buffer.param_val<<endl;
-                    cout << "result_code "<< read_buffer.result_code<<endl;
-                    cout << "result_msg " << read_buffer.result_msg<<endl;
+                    cout << "recvfromvcs: seq_no "<< read_buffer.seq_no<<endl;
+                    cout << "recvfromvcs: ack_no "<< read_buffer.ack_no<<endl;
+                    cout << "recvfromvcs: cmd_code "<<read_buffer.cmd_code<<endl;
+                    cout << "recvfromvcs: param_id "<< read_buffer.param_id<<endl;
+                    cout << "recvfromvcs: param_val "<< read_buffer.param_val<<endl;
+                    cout << "recvfromvcs: result_code "<< read_buffer.result_code<<endl;
+                    cout << "recvfromvcs: result_msg " << read_buffer.result_msg<<endl;
+                    cout << "///////////////////"<<endl;
+                    if(read_buffer.cmd_code == 0)
+                        processRecvmsg(&read_buffer);
                     vcs_ack.seq_no = read_buffer.seq_no;
                     vcs_ack.ack_no = read_buffer.ack_no;
                     vcs_ack.cmd_code = read_buffer.cmd_code;
@@ -158,11 +210,12 @@ int main(int argc, char**argv)
                     vcs_ack.result_code = read_buffer.result_code;
                     vcs_ack.result_msg = read_buffer.result_msg;
                     agent_pub.publish(vcs_ack);
-
                 }
             }
         }
     }
     epoll_ctl(epfd,EPOLL_CTL_DEL,vcsd_sd,NULL);
+    regfree_all();
     close(vcsd_sd);
+    return 0;
 }
