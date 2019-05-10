@@ -21,7 +21,7 @@ extern int get_cfParam(char *name);
 
 #define LOCKFILE "/var/run/vcsmd.pid"
 #define LOCKMODE (S_IRUSR|S_IWUSR|S_IRGRP|S_IROTH)
-#define SERVER_IPADDR "192.168.0.4"
+#define SERVER_IPADDR "127.0.0.1"
 #define SERVER_IPPORT 9002
 sigset_t mask;
 

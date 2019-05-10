@@ -2,5 +2,5 @@ set ecat up
 set can up
 set ecat on
 set can on
-set motion fixsteer
 set pl.mode 3
+set motion fixsteer
