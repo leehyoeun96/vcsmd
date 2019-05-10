@@ -21,6 +21,10 @@
 #include <fcntl.h>
 #include "vcs_agent/vcs.h"
 #include "vcs_agent/Message1.h"
+#include <geometry_msgs/TwistStamped.h>
+#include <nav_msgs/Odometry.h>
+#include <tf/transform_broadcaster.h>
+
 using namespace std;
 using namespace ros;
 
