@@ -142,13 +142,40 @@ void updateOdometry(const double vx, const double vth, const ros::Time &cur_time
     odom_pub.publish(odom);
 
 }
+void printStatusBar(double tvel, double cvel)
+{
+    int i;
+    for (i = 0; i < (int)cvel; i++)
+    {
+        cout << light_green;
+        cout << "0";
+    }
+    cout << endl;
+
+    for (i = 0; i < (int)(tvel); i++)
+    {
+        cout << " ";
+    }
+    cout << yellow << "^\n";
+
+    for (i = 0; i < (int)(tvel - 2); i++)
+    {
+        cout << " ";
+    }
+    cout << yellow << tvel;
+    cout << white;
+}
 double tmp_v = 0;
 double tmp_a = 0;
 void processRecvmsg(message *msg)
 {
     cout << "processRecvmsg: result_msg "<< msg->result_msg<<endl;
     cout << "processRecvmsg: param_val "<< msg->param_val<<endl;
-    if(msg->param_id == 20) tmp_v = msg->param_val;
+    if(msg->param_id == 20) 
+    {
+        tmp_v = msg->param_val;
+        printStatusBar(buffer[0], tmp_v);
+    }
     if(msg->param_id == 21) tmp_a = msg->param_val;
     if(tmp_v && tmp_a) updateOdometry(tmp_v, tmp_a, ros::Time::now());
 }
