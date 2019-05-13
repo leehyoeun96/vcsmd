@@ -1,8 +1,8 @@
 #include "vcs_agent/vcs_agent.h" 
 #define MAX_EVENTS 10 
 #define BUF_SIZE 255 
-#define IP_ADDR "127.0.0.1"
-//#define IP_ADDR "192.168.0.4"
+//#define IP_ADDR "127.0.0.1"
+#define IP_ADDR "192.168.0.4"
 #define STARTUP_DIR "/home/qjin/catkin_ws/src/vcs_agent/start_up.txt"
 int vcsmd_sd;
 int vcsd_sd;
@@ -81,7 +81,6 @@ void VCSstartupCallback(const vcs_agent::Message1::ConstPtr& msg)
         set_pose += dtos;
         set_pose += "\n";
         vcs_cmd_msg = parse_handler((char*)set_pose.c_str());
-        if(vcs_cmd_msg.param_id == 16) buffer[0] = vcs_cmd_msg.param_val;//for printStatusBar
         sendtovcs(&vcs_cmd_msg);
     }
     else
@@ -90,6 +89,7 @@ void VCSstartupCallback(const vcs_agent::Message1::ConstPtr& msg)
         string cmd = msg->command;
         cmd += "\n";
         vcs_cmd_msg = parse_handler((char*)cmd.c_str());
+        if(vcs_cmd_msg.param_id == 16) buffer[0] = vcs_cmd_msg.param_val;//for printStatusBar
         sendtovcs(&vcs_cmd_msg);
     }
 }
@@ -135,7 +135,7 @@ void updateOdometry(const double vx, const double vth, const ros::Time &cur_time
     double delta_y = (vx * sin(th)) * dt;
     double delta_th = vth * dt;
 
-    ROS_INFO("dt : %lf delta(x y th) : (%lf %lf %lf)", dt, delta_x, delta_y, delta_th);
+   // ROS_INFO("dt : %lf delta(x y th) : (%lf %lf %lf)", dt, delta_x, delta_y, delta_th);
 
     x += delta_x;
     y += delta_y;
