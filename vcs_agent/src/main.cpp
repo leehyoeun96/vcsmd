@@ -80,6 +80,7 @@ void VCSstartupCallback(const vcs_agent::Message1::ConstPtr& msg)
         set_pose += dtos;
         set_pose += "\n";
         vcs_cmd_msg = parse_handler((char*)set_pose.c_str());
+        if(vcs_cmd_msg.param_id == 16) buffer[0] = vcs_cmd_msg.param_val;//for printStatusBar
         sendtovcs(&vcs_cmd_msg);
     }
     else
@@ -192,7 +193,7 @@ void processRecvmsg(message *msg)
         tmp_v = msg->param_val;
         printStatusBar(buffer[0], tmp_v);
     }
-		else if(msg->param_id == 21) tmp_a = msg->param_val;
+	else if(msg->param_id == 21) tmp_a = msg->param_val;
     if(tmp_v) updateOdometry(tmp_v, tmp_a, ros::Time::now());
 }
 
