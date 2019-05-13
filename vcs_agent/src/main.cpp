@@ -1,8 +1,8 @@
 #include "vcs_agent/vcs_agent.h" 
 #define MAX_EVENTS 10 
 #define BUF_SIZE 255 
-#define IP_ADDR "127.0.0.1"
-#define STARTUP_DIR "/home/rubicom/catkin_ws/src/vcs_agent/start_up.txt"
+#define IP_ADDR "192.168.0.4"
+#define STARTUP_DIR "/home/qjin/catkin_ws/src/vcs_agent/start_up.txt"
 int vcsmd_sd;
 int vcsd_sd;
 double buffer[2];
@@ -185,8 +185,8 @@ double tmp_v = 0;
 double tmp_a = 0;
 void processRecvmsg(message *msg)
 {
-    cout << "processRecvmsg: result_msg "<< msg->result_msg<<endl;
-    cout << "processRecvmsg: param_val "<< msg->param_val<<endl;
+   // cout << "processRecvmsg: result_msg "<< msg->result_msg<<endl;
+   // cout << "processRecvmsg: param_val "<< msg->param_val<<endl;
     if(msg->param_id == 20) 
     {
         tmp_v = msg->param_val;
@@ -280,14 +280,14 @@ int main(int argc, char**argv)
                     printf("Closed client: %d\n",evs[i].data.fd);
                 }
                 else{
-                    cout << "recvfromvcs: seq_no "<< read_buffer.seq_no<<endl;
+/*                    cout << "recvfromvcs: seq_no "<< read_buffer.seq_no<<endl;
                     cout << "recvfromvcs: ack_no "<< read_buffer.ack_no<<endl;
                     cout << "recvfromvcs: cmd_code "<<read_buffer.cmd_code<<endl;
                     cout << "recvfromvcs: param_id "<< read_buffer.param_id<<endl;
                     cout << "recvfromvcs: param_val "<< read_buffer.param_val<<endl;
                     cout << "recvfromvcs: result_code "<< read_buffer.result_code<<endl;
                     cout << "recvfromvcs: result_msg " << read_buffer.result_msg<<endl;
-                    cout << "///////////////////"<<endl;
+                    cout << "///////////////////"<<endl;*/
                     if(read_buffer.cmd_code == 0)
                         processRecvmsg(&read_buffer);
                     vcs_ack.seq_no = read_buffer.seq_no;
