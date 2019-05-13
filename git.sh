@@ -1,3 +1,3 @@
 git add --all
-git commit -m 'auto commit'
+git commit -m '$1'
 git push leehyoeun96
