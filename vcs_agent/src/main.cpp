@@ -1,7 +1,8 @@
 #include "vcs_agent/vcs_agent.h" 
 #define MAX_EVENTS 10 
 #define BUF_SIZE 255 
-#define IP_ADDR "192.168.0.4"
+#define IP_ADDR "127.0.0.1"
+//#define IP_ADDR "192.168.0.4"
 #define STARTUP_DIR "/home/qjin/catkin_ws/src/vcs_agent/start_up.txt"
 int vcsmd_sd;
 int vcsd_sd;
