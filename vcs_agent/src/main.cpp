@@ -6,6 +6,22 @@
 int vcsmd_sd;
 int vcsd_sd;
 double buffer[2];
+char black[] = {0x1b, '[', '0', ';', '3', '0', 'm', 0};
+char dark_gray[] = {0x1b, '[', '1', ';', '3', '0', 'm', 0};
+char red[] = {0x1b, '[', '0', ';', '3', '1', 'm', 0};
+char light_red[] = {0x1b, '[', '1', ';', '3', '1', 'm', 0};
+char green[] = {0x1b, '[', '0', ';', '3', '2', 'm', 0};
+char light_green[] = {0x1b, '[', '1', ';', '3', '2', 'm', 0};
+char brown[] = {0x1b, '[', '0', ';', '3', '3', 'm', 0};
+char yellow[] = {0x1b, '[', '1', ';', '3', '3', 'm', 0};
+char blue[] = {0x1b, '[', '0', ';', '3', '4', 'm', 0};
+char light_blue[] = {0x1b, '[', '1', ';', '3', '4', 'm', 0};
+char purple[] = {0x1b, '[', '0', ';', '3', '5', 'm', 0};
+char light_purple[] = {0x1b, '[', '1', ';', '3', '5', 'm', 0};
+char cyan[] = {0x1b, '[', '0', ';', '3', '6', 'm', 0};
+char light_cyan[] = {0x1b, '[', '1', ';', '3', '6', 'm', 0};
+char light_gray[] = {0x1b, '[', '0', ';', '3', '7', 'm', 0};
+char white[] = {0x1b, '[', '1', ';', '3', '7', 'm', 0};
 
 double convert_mps_to_kmh(double linear_x)
 {
@@ -176,8 +192,8 @@ void processRecvmsg(message *msg)
         tmp_v = msg->param_val;
         printStatusBar(buffer[0], tmp_v);
     }
-    if(msg->param_id == 21) tmp_a = msg->param_val;
-    if(tmp_v && tmp_a) updateOdometry(tmp_v, tmp_a, ros::Time::now());
+		else if(msg->param_id == 21) tmp_a = msg->param_val;
+    if(tmp_v) updateOdometry(tmp_v, tmp_a, ros::Time::now());
 }
 
 

@@ -5,7 +5,6 @@ namespace mManagerNS
 
  mManager::mManager()
  {
-	bReplan = false;
 	bReset = false;
 	vertex[4] = 0;
 	missionNo = 1;
