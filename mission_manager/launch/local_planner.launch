@@ -21,6 +21,7 @@
 	<arg name="pkg" value="waypoint_follower"/>
 	<arg name="file" value="pure_pursuit.launch"/>
 	<arg name="value" value=""/>
+    <arg name="node_name" value="timed_roslaunch"/>
   </include>
 
 </launch>
