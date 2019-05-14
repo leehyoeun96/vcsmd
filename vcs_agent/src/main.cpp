@@ -7,6 +7,7 @@
 int vcsmd_sd;
 int vcsd_sd;
 double buffer[2];
+bool becat = 0;
 char black[] = {0x1b, '[', '0', ';', '3', '0', 'm', 0};
 char dark_gray[] = {0x1b, '[', '1', ';', '3', '0', 'm', 0};
 char red[] = {0x1b, '[', '0', ';', '3', '1', 'm', 0};
@@ -81,7 +82,6 @@ void VCSstartupCallback(const vcs_agent::Message1::ConstPtr& msg)
         set_pose += dtos;
         set_pose += "\n";
         vcs_cmd_msg = parse_handler((char*)set_pose.c_str());
-        if(vcs_cmd_msg.param_id == 16) buffer[0] = vcs_cmd_msg.param_val;//for printStatusBar
         sendtovcs(&vcs_cmd_msg);
     }
     else
@@ -92,10 +92,14 @@ void VCSstartupCallback(const vcs_agent::Message1::ConstPtr& msg)
         vcs_cmd_msg = parse_handler((char*)cmd.c_str());
         sendtovcs(&vcs_cmd_msg);
     }
+    if(vcs_cmd_msg.param_id == 16) buffer[0] = vcs_cmd_msg.param_val;//for printStatusBar
+    if((vcs_cmd_msg.param_id == 2) &&( vcs_cmd_msg.param_val == 1)) becat = 1;//ecat on 
+    else if( (vcs_cmd_msg.param_id == 1) | ((vcs_cmd_msg.param_id == 2) && (vcs_cmd_msg.param_val == 2))) becat = 0;//f or ecat off
 }
 
 void twistCallback(const geometry_msgs::TwistStampedConstPtr &input_msg)
 {
+    if(!becat) return;
     message packet;
     int bytecount = 0;
 
@@ -260,7 +264,7 @@ int main(int argc, char**argv)
         printf("connect error with vcsd\n");
         return 0;
     }
-
+    becat = 0;
     printf("connected...\n");
 
     //epoll setting//
