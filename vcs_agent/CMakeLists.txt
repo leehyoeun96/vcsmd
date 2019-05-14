@@ -13,6 +13,7 @@ add_compile_options(-std=c++11)
             std_msgs
             geometry_msgs
             message_generation
+            tf
             )
 
 ## Generate messages in the 'msg' folder

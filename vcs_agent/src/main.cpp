@@ -1,8 +1,8 @@
 #include "vcs_agent/vcs_agent.h" 
 #define MAX_EVENTS 10 
 #define BUF_SIZE 255 
-//#define IP_ADDR "127.0.0.1"
-#define IP_ADDR "192.168.0.4"
+#define IP_ADDR "127.0.0.1"
+//#define IP_ADDR "192.168.0.4"
 #define STARTUP_DIR "/home/qjin/catkin_ws/src/vcs_agent/start_up.txt"
 int vcsmd_sd;
 int vcsd_sd;
@@ -81,6 +81,7 @@ void VCSstartupCallback(const vcs_agent::Message1::ConstPtr& msg)
         set_pose += dtos;
         set_pose += "\n";
         vcs_cmd_msg = parse_handler((char*)set_pose.c_str());
+        if(vcs_cmd_msg.param_id == 16) buffer[0] = vcs_cmd_msg.param_val;//for printStatusBar
         sendtovcs(&vcs_cmd_msg);
     }
     else
@@ -89,7 +90,6 @@ void VCSstartupCallback(const vcs_agent::Message1::ConstPtr& msg)
         string cmd = msg->command;
         cmd += "\n";
         vcs_cmd_msg = parse_handler((char*)cmd.c_str());
-        if(vcs_cmd_msg.param_id == 16) buffer[0] = vcs_cmd_msg.param_val;//for printStatusBar
         sendtovcs(&vcs_cmd_msg);
     }
 }
@@ -124,6 +124,7 @@ double y;
 double th;
 ros::Time stamp;
 ros::Publisher odom_pub;
+tf::TransformBroadcaster odom_broadcaster_;
 void updateOdometry(const double vx, const double vth, const ros::Time &cur_time)
 {
     double dt = (cur_time - stamp).toSec();
@@ -135,7 +136,7 @@ void updateOdometry(const double vx, const double vth, const ros::Time &cur_time
     double delta_y = (vx * sin(th)) * dt;
     double delta_th = vth * dt;
 
-   // ROS_INFO("dt : %lf delta(x y th) : (%lf %lf %lf)", dt, delta_x, delta_y, delta_th);
+    ROS_INFO("dt : %lf delta(x y th) : (%lf %lf %lf)", dt, delta_x, delta_y, delta_th);
 
     x += delta_x;
     y += delta_y;
@@ -143,6 +144,18 @@ void updateOdometry(const double vx, const double vth, const ros::Time &cur_time
     stamp = cur_time;
 
     geometry_msgs::Quaternion odom_quat = tf::createQuaternionMsgFromYaw(th);
+
+    geometry_msgs::TransformStamped odom_trans;
+    odom_trans.header.stamp = Time::now();
+    odom_trans.header.frame_id = "odom";
+    odom_trans.child_frame_id = "base_link";
+
+    odom_trans.transform.translation.x = x;
+    odom_trans.transform.translation.y = y;
+    odom_trans.transform.translation.z = 0.0;
+    odom_trans.transform.rotation = odom_quat;
+
+    odom_broadcaster_.sendTransform(odom_trans);
 
     nav_msgs::Odometry odom;
     odom.header.stamp = Time::now();
