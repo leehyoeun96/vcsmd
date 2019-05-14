@@ -15,11 +15,11 @@ namespace mManagerNS
 	pub_goal_pose = nh.advertise<geometry_msgs::PoseStamped>("/move_base_simple/goal", 10);
 	sub_current_pose = nh.subscribe("/current_pose", 10, &mManager::callbackGetCurrentPose, this);
 	sub_vcs_ack = nh.subscribe("/vcs_ack", 10, &mManager::callbackGetVCSack, this);
-	initialpose_msg.header.frame_id = "world";
+	initialpose_msg.header.frame_id = "map";
 	initialpose_msg.pose.pose.position.z = 0;
 	initialpose_msg.pose.pose.orientation.x = 0;
 	initialpose_msg.pose.pose.orientation.y = 0;
-	goalpose_msg.header.frame_id = "world";
+	goalpose_msg.header.frame_id = "map";
 	goalpose_msg.pose.position.z = 0;
 	goalpose_msg.pose.orientation.x = 0;
 	goalpose_msg.pose.orientation.y = 0;
