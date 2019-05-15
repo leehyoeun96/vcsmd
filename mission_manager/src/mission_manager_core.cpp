@@ -49,7 +49,6 @@ namespace mManagerNS
 	int margin = 5;
 	double cur_goal_x, cur_goal_y;
 	double* goal;	
-	cout<<"missionNo : "<<missionNo<<endl;
 	if(missionNo > MAX_MISSION)
 	{
 		cout<<"end!!"<<endl;

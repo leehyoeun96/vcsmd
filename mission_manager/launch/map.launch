@@ -4,9 +4,9 @@
   <include file="$(find mission_manager)/now_hyo/tf.launch"/>
 
   <!-- Point Cloud Map -->
-  <node pkg="map_file" type="points_map_loader" name="points_map_loader" args="noupdate $(find mission_manager)/now_hyo/soongsil_fullmap_fast_binary.pcd" />
+  <node pkg="map_file" type="points_map_loader" name="points_map_loader" args="noupdate $(find mission_manager)/now_hyo/20190507_soongsil_0.2.pcd" />
 
   <!-- Vector Map -->
-  <node pkg="map_file" type="vector_map_loader" name="vector_map_loader" args="$(find mission_manager)/now_hyo/20190512/dtlane.csv $(find mission_manager)/now_hyo/20190512/idx.csv $(find mission_manager)/now_hyo/20190512/lane.csv $(find mission_manager)/now_hyo/20190512/node.csv $(find mission_manager)/now_hyo/20190512/point.csv" />
+  <node pkg="map_file" type="vector_map_loader" name="vector_map_loader" args="$(find mission_manager)/now_hyo/soongsil_0512/dtlane.csv $(find mission_manager)/now_hyo/soongsil_0512/idx.csv $(find mission_manager)/now_hyo/soongsil_0512/lane.csv $(find mission_manager)/now_hyo/soongsil_0512/node.csv $(find mission_manager)/now_hyo/soongsil_0512/point.csv" />
 
 </launch>
