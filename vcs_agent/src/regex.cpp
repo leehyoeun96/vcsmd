@@ -283,7 +283,7 @@ void _reg_process(char *msg)
         else if( strcasecmp(arg1, "cruisecontrol.target_velocity") == 0 | (strcasecmp(arg1, "cc.tvelo") == 0)) umsg.param_id = 16;
         else if( strcasecmp(arg1, "steercontrol.target_angular_velocity") == 0 | (strcasecmp(arg1, "sc.tanvelo") == 0)) umsg.param_id = 17;
         else if( strcasecmp(arg1, "hvi.mode") == 0) umsg.param_id = 18;
-        else if( strcasecmp(arg1, "CAN.publish_to_agent") == 0) umsg.param_id = 19;
+        else if( strcasecmp(arg1, "CAN.pub2agent") == 0) umsg.param_id = 19;
         else {
             umsg.result_code = -1;
             printf("Unknown command\n");

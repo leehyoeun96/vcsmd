@@ -20,6 +20,7 @@
 #include <sys/wait.h>
 #include <fcntl.h>
 #include "vcs_agent/vcs.h"
+#include "vcs_agent/mon.h"
 #include "vcs_agent/Message1.h"
 #include <geometry_msgs/TwistStamped.h>
 #include <nav_msgs/Odometry.h>

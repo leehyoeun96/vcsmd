@@ -8,22 +8,6 @@ int vcsmd_sd;
 int vcsd_sd;
 double buffer[2];
 bool becat = 0;
-char black[] = {0x1b, '[', '0', ';', '3', '0', 'm', 0};
-char dark_gray[] = {0x1b, '[', '1', ';', '3', '0', 'm', 0};
-char red[] = {0x1b, '[', '0', ';', '3', '1', 'm', 0};
-char light_red[] = {0x1b, '[', '1', ';', '3', '1', 'm', 0};
-char green[] = {0x1b, '[', '0', ';', '3', '2', 'm', 0};
-char light_green[] = {0x1b, '[', '1', ';', '3', '2', 'm', 0};
-char brown[] = {0x1b, '[', '0', ';', '3', '3', 'm', 0};
-char yellow[] = {0x1b, '[', '1', ';', '3', '3', 'm', 0};
-char blue[] = {0x1b, '[', '0', ';', '3', '4', 'm', 0};
-char light_blue[] = {0x1b, '[', '1', ';', '3', '4', 'm', 0};
-char purple[] = {0x1b, '[', '0', ';', '3', '5', 'm', 0};
-char light_purple[] = {0x1b, '[', '1', ';', '3', '5', 'm', 0};
-char cyan[] = {0x1b, '[', '0', ';', '3', '6', 'm', 0};
-char light_cyan[] = {0x1b, '[', '1', ';', '3', '6', 'm', 0};
-char light_gray[] = {0x1b, '[', '0', ';', '3', '7', 'm', 0};
-char white[] = {0x1b, '[', '1', ';', '3', '7', 'm', 0};
 
 double convert_mps_to_kmh(double linear_x)
 {
@@ -128,9 +112,9 @@ double y;
 double th;
 ros::Time stamp;
 ros::Publisher odom_pub;
-tf::TransformBroadcaster odom_broadcaster_;
 void updateOdometry(const double vx, const double vth, const ros::Time &cur_time)
 {
+    tf::TransformBroadcaster odom_broadcaster_;
     double dt = (cur_time - stamp).toSec();
     if (dt > 100.0){
         stamp = cur_time;
@@ -138,7 +122,7 @@ void updateOdometry(const double vx, const double vth, const ros::Time &cur_time
     }
     double delta_x = (vx * cos(th)) * dt;
     double delta_y = (vx * sin(th)) * dt;
-    double delta_th = vth * dt;
+    double delta_th = vth * dt * 0.45;
 
     ROS_INFO("dt : %lf delta(x y th) : (%lf %lf %lf)", dt, delta_x, delta_y, delta_th);
 
@@ -177,44 +161,24 @@ void updateOdometry(const double vx, const double vth, const ros::Time &cur_time
     odom_pub.publish(odom);
 
 }
-void printStatusBar(double tvel, double cvel)
-{
-    int i;
-    for (i = 0; i < (int)cvel; i++)
-    {
-        cout << light_green;
-        cout << "0";
-    }
-    cout << endl;
 
-    for (i = 0; i < (int)(tvel); i++)
-    {
-        cout << " ";
-    }
-    cout << yellow << "^\n";
-
-    for (i = 0; i < (int)(tvel - 2); i++)
-    {
-        cout << " ";
-    }
-    cout << yellow << tvel;
-    cout << white;
-}
 double tmp_v = 0;
 double tmp_a = 0;
 void processRecvmsg(message *msg)
 {
+    vcs_agent::mon mon_val;
    // cout << "processRecvmsg: result_msg "<< msg->result_msg<<endl;
    // cout << "processRecvmsg: param_val "<< msg->param_val<<endl;
     if(msg->param_id == 20) 
     {
         tmp_v = msg->param_val;
-        printStatusBar(buffer[0], tmp_v);
+        //printStatusBar(buffer[0], tmp_v);
+        mon_val.tvel = buffer[0];
+        mon_val.cvel = tmp_v;
     }
 	else if(msg->param_id == 21) tmp_a = msg->param_val;
     if(tmp_v) updateOdometry(tmp_v, tmp_a, ros::Time::now());
 }
-
 
 
 int main(int argc, char**argv)
@@ -228,6 +192,7 @@ int main(int argc, char**argv)
     ros::Subscriber vcs_msg_sub = nh.subscribe("/vcs_msg",1,VCSstartupCallback);
 
     ros::Publisher agent_pub = nh.advertise<vcs_agent::vcs>("/vcs_ack", 10);
+    ros::Publisher graph_pub = nh.advertise<vcs_agent::mon>("/graph_value", 10);
     odom_pub = nh.advertise<nav_msgs::Odometry>("/vehicle/odom", 10);
 
     message read_buffer;
@@ -299,14 +264,14 @@ int main(int argc, char**argv)
                     printf("Closed client: %d\n",evs[i].data.fd);
                 }
                 else{
-/*                    cout << "recvfromvcs: seq_no "<< read_buffer.seq_no<<endl;
+                    cout << "recvfromvcs: seq_no "<< read_buffer.seq_no<<endl;
                     cout << "recvfromvcs: ack_no "<< read_buffer.ack_no<<endl;
                     cout << "recvfromvcs: cmd_code "<<read_buffer.cmd_code<<endl;
                     cout << "recvfromvcs: param_id "<< read_buffer.param_id<<endl;
                     cout << "recvfromvcs: param_val "<< read_buffer.param_val<<endl;
                     cout << "recvfromvcs: result_code "<< read_buffer.result_code<<endl;
                     cout << "recvfromvcs: result_msg " << read_buffer.result_msg<<endl;
-                    cout << "///////////////////"<<endl;*/
+                    cout << "///////////////////"<<endl;
                     if(read_buffer.cmd_code == 0)
                         processRecvmsg(&read_buffer);
                     vcs_ack.seq_no = read_buffer.seq_no;
