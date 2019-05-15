@@ -17,11 +17,11 @@
 
   <!--runnig pure_pursuit-->
   <include file="$(find timed_roslaunch)/launch/timed_roslaunch.launch">
-	<arg name="time" value="0.5"/>
+	<arg name="time" value="1"/>
 	<arg name="pkg" value="waypoint_follower"/>
 	<arg name="file" value="pure_pursuit.launch"/>
 	<arg name="value" value=""/>
-    <arg name="node_name" value="timed_roslaunch"/>
+ 	<arg name="node_name" value="timed_roslaunch"/>
   </include>
 
 </launch>
