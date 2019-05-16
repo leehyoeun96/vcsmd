@@ -88,7 +88,6 @@ namespace vcsAgent
 
     void vAgent::twistCallback(const geometry_msgs::TwistStampedConstPtr &input_msg)
     {
-        cout << ~becat <<endl;
         if(!becat)
         {
             cout<<"ecat up/on first"<<endl;
@@ -124,7 +123,6 @@ namespace vcsAgent
         double wheel_base = 2.65;
         double maximum_tire_angle = (asin(wheel_base / (minimum_turning_radius))) * 180 / pi;
         double current_tire_angle = cang / maximum_steering_angle * maximum_tire_angle;
-
 
         return tan((current_tire_angle)*pi/180) * cvel / wheel_base;
     }

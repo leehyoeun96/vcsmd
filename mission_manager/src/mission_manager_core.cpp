@@ -34,7 +34,7 @@ namespace mManagerNS
  void mManager::CleanAndStart()
  {
 	//shutdown
-	int stat = system("/home/autoware/Autoware/ros/src/util/packages/mission_manager/script/shutdown");
+	int stat = system(SHUTDOWN_DIR);
 	//restart
 	stat = system("roslaunch mission_manager global_planner.launch &");
 	sleep(5);
@@ -49,10 +49,11 @@ namespace mManagerNS
 	int margin = 5;
 	double cur_goal_x, cur_goal_y;
 	double* goal;	
+//	cout<<"missionNo : "<<missionNo<<endl;
 	if(missionNo > MAX_MISSION)
 	{
 		cout<<"end!!"<<endl;
-		int stat = system("/home/autoware/Autoware/ros/src/util/packages/mission_manager/script/shutdown");
+		int stat = system(SHUTDOWN_DIR);
 		exit(0);
 	}
 	goal = goal_pose[missionNo];
