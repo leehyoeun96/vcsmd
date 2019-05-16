@@ -10,7 +10,7 @@
 #include "mission_manager/Message.h"
 #include "mission_manager/vcs_msg.h"
 
-#define MAX_MISSION 4
+#define MAX_MISSION 2
 #define MAX_EVENTS 10
 #define BUF_SIZE 100
 using namespace std;
@@ -28,12 +28,10 @@ class mManager
 	int epfd;
 	struct epoll_event ev, evs[MAX_EVENTS];
 
-	double init_pose[4]={18.9262599945, 95.3431091309, -0.999870045252, 0.0161211850601};
+	double init_pose[4]={14.9361858368, 1.67250847816,-0.00892763260947, 0.999960147894};
 	double goal_pose[MAX_MISSION][4]={
-				{-19.4966564178, 91.7895507812, -0.994828294927, 0.101570978205},
-                                {-35.154548645, 66.4704055786, -0.636849333142, 0.770988279338},
-                                {-30.9346904755, 35.598815918, -0.613035404341, 0.790055436678},
-                                {-6.5039358139, 3.72778320312, -0.350655305441, 0.936504595166},
+				{-0.122846618295, 93.5581130981, -0.99828613548, 0.058521719973},
+                                {2.17429161072, 0.396320402622, 0.0, 1.0},
                                 };
 
 	bool bReplan;
