@@ -286,6 +286,7 @@ void vAgent::_reg_process(char *msg)
         else if( strcasecmp(arg1, "steercontrol.target_angular_velocity") == 0 | (strcasecmp(arg1, "sc.tanvelo") == 0)) umsg.param_id = 17;
         else if( strcasecmp(arg1, "hvi.mode") == 0) umsg.param_id = 18;
         else if( strcasecmp(arg1, "CAN.pub2agent") == 0) umsg.param_id = 19;
+        else if( strcasecmp(arg1, "ECAT.num_motors") == 0) umsg.param_id = 20;
         else {
             umsg.result_code = -1;
             printf("Unknown command\n");
