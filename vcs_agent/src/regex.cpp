@@ -25,7 +25,9 @@ regex_t regex_set_controller;
 message umsg;
 int seqno =0;
 #define MAX_BUFFER 1024
-void regcomp_all()
+using namespace vcsAgent;
+
+void vAgent::regcomp_all()
 { // NOT COMPLETE!!!
     regcomp(&regex_help, "^help$", REG_EXTENDED);
     regcomp(&regex_quit, "^quit$", REG_EXTENDED);
@@ -47,7 +49,7 @@ void regcomp_all()
     regcomp(&regex_set_controller, "^set controller ([a-zA-Z0-9_.]{1,19})$", REG_EXTENDED);
 }
 
-void regfree_all()
+void vAgent::regfree_all()
 { // NOT COMPLETE!!!
     regfree(&regex_help);
     regfree(&regex_quit);
@@ -68,7 +70,7 @@ void regfree_all()
     regfree(&regex_set_controller);
 }
 
-int regexec_with_args(regex_t *regex, char *msg, int ngroups, regmatch_t *groups,
+int vAgent::regexec_with_args(regex_t *regex, char *msg, int ngroups, regmatch_t *groups,
         char *arg1, char *arg2)
 {
     int ret = regexec(regex, msg, ngroups, groups, 0);
@@ -91,7 +93,7 @@ int regexec_with_args(regex_t *regex, char *msg, int ngroups, regmatch_t *groups
     return !ret;
 }
 
-void chomp(char *msg, int len)
+void vAgent::chomp(char *msg, int len)
 {
     int nconsumed, nread = len;
     char *npos, *rpos, *cpos = msg;
@@ -106,7 +108,7 @@ void chomp(char *msg, int len)
     }
 }
 
-void _reg_process(char *msg)
+void vAgent::_reg_process(char *msg)
 { // NOT COMPLETE!!!
     regmatch_t groups[3];
     char arg1[128];
@@ -297,19 +299,19 @@ done:
     return;
 }
 
-int reg_process(char *msg)
+int vAgent::reg_process(char *msg)
 {
     _reg_process(msg);
     return 0;
 }
 
-void print_string(char *p)
+void vAgent::print_string(char *p)
 {
     while (*p != 0)
         printf("%u_", (unsigned char)*p++);
     printf("\n");
 }
-message parse_handler(char* file_buf)
+message vAgent::parse_handler(char* file_buf)
 {
     char buf[MAX_BUFFER], buffer[MAX_BUFFER];
     int nread, nconsumed, totread = 0;

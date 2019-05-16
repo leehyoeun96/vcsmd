@@ -2,4 +2,5 @@ set ecat up
 set can up
 set ecat on
 set can on
+set CAN.pub2agent
 set motion ready2start
