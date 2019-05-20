@@ -75,6 +75,24 @@ namespace vcsAgent
             }
             else cout << "can't read file" <<endl;
         }
+        else if((msg->command).compare("finish vcs") == 0)//finish vcs
+        {
+            FILE *fp = fopen(FINISH_DIR,"r");
+
+            char file_buf[50]={0,};
+            if(fp != NULL)
+            {
+                while(1)
+                {   
+                    fgets(file_buf, sizeof(file_buf),fp);
+                    if(feof(fp)) break;
+                    vcs_cmd_msg = parse_handler(file_buf);
+                    sendtovcs(&vcs_cmd_msg);
+                }
+                fclose(fp);
+            }
+            else cout << "can't read file" <<endl;
+        }
         else if((msg->command).compare("pose lidar") == 0) //pose lidar
         {
             string set_pose ("set poselidar.mode ");

@@ -32,6 +32,7 @@
 #define IP_ADDR "127.0.0.1"
 //#define IP_ADDR "192.168.0.8"
 #define STARTUP_DIR "/home/rubicom/catkin_ws/src/vcs_agent/start_up.txt"
+#define FINISH_DIR "/home/rubicom/catkin_ws/src/vcs_agent/finish.txt"
 using namespace std;
 using namespace ros;
 
