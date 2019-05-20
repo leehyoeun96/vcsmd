@@ -17,44 +17,52 @@ char light_cyan[] = {0x1b, '[', '1', ';', '3', '6', 'm', 0};
 char light_gray[] = {0x1b, '[', '0', ';', '3', '7', 'm', 0};
 char white[] = {0x1b, '[', '1', ';', '3', '7', 'm', 0};
 
+int hzCt = 0;
+int pktCnt = 0;
+
 void printStatusBar(const vcs_mon::graph::ConstPtr& msg)
 {
-    int i;
-    int switch_color = 1;
-
-    for (i = 0; i < (int)msg->cvel; i++)
+    pktCnt++;
+    if(pktCnt == hzCt)
     {
-	if(i % 10 == 0)
-	{
-           cout << light_green;
-	   if(switch_color == 1)
-	   {
-		cout << light_green;
-		switch_color = 0;
- 	   }
-	   else if(switch_color == 0)
-	   {
-		cout << green;
-		switch_color = 1;
- 	   }
+        int i;
+        int switch_color = 1;
 
-	}
-        cout << "0";
-    }
-    cout << endl;
+        for (i = 0; i < (int)msg->cvel; i++)
+        {
+            if(i % 10 == 0)
+            {
+                cout << light_green;
+                if(switch_color == 1)
+                {
+                    cout << light_green;
+                    switch_color = 0;
+                }
+                else if(switch_color == 0)
+                {
+                    cout << green;
+                    switch_color = 1;
+                }
 
-    for (i = 0; i < (int)(msg->tvel); i++)
-    {
-        cout << " ";
-    }
-    cout << yellow << "^\n";
+            }
+            cout << "0";
+        }
+        cout << endl;
 
-    for (i = 0; i < (int)(msg->tvel - 1); i++)
-    {
-        cout << " ";
+        for (i = 0; i < (int)(msg->tvel); i++)
+        {
+            cout << " ";
+        }
+        cout << yellow << "^\n";
+
+        for (i = 0; i < (int)(msg->tvel - 1); i++)
+        {
+            cout << " ";
+        }
+        cout << yellow << msg->tvel << endl;
+        cout << white;
+        pktCnt = 0;
     }
-    cout << yellow << msg->tvel << endl;
-    cout << white;
 }   
 
 int main(int argc, char **argv)
@@ -62,6 +70,20 @@ int main(int argc, char **argv)
     ros::init(argc, argv, "vcs_mon");
     ros::NodeHandle nh;
     ros::Subscriber graph_msg_sub = nh.subscribe("/graph_value",1,printStatusBar);
+
+    if(argv[1] == NULL) 
+    {
+        printf("set print hz\n");
+        return 1;
+    }
+    hzCt = atoi(argv[1]);
+    if(hzCt == 0)
+    {
+        printf("set hz correctly!\n");
+        return 1;
+    }
+
+    printf("set hz %d\n", hzCt);
 
     while(ros::ok())
     {
