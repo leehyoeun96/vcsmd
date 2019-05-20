@@ -83,7 +83,7 @@ namespace vcsAgent
         }
         if(vcs_cmd_msg.param_id == 16) buffer[0] = vcs_cmd_msg.param_val;//for printStatusBar
         if((vcs_cmd_msg.param_id == 2) && (vcs_cmd_msg.param_val == 1)) becat = 1;//ecat on 
-        else if((vcs_cmd_msg.param_id == 1) | ((vcs_cmd_msg.param_id == 2) && (vcs_cmd_msg.param_val == 2))) becat = 0;//f or ecat off
+        else if((vcs_cmd_msg.param_id == 1) || ((vcs_cmd_msg.param_id == 2) && (vcs_cmd_msg.param_val == 2))) becat = 0;//f or ecat off
     }
 
     void vAgent::twistCallback(const geometry_msgs::TwistStampedConstPtr &input_msg)
@@ -115,7 +115,7 @@ namespace vcsAgent
         packet = parse_handler((char*)set_ang.c_str());
         sendtovcs(&packet);
     }
-    double vAgent::convertSteeringAngleToAngularVelocity(const double cvel, const double cang)
+/*    double vAgent::convertSteeringAngleToAngularVelocity(const double cvel, const double cang)
     {
         double pi = 3.141592;
         double minimum_turning_radius = 10.6;
@@ -156,27 +156,100 @@ namespace vcsAgent
 
         odom_trans.transform.translation.x = x;
         odom_trans.transform.translation.y = y;
-        odom_trans.transform.translation.z = 0.0;
-        odom_trans.transform.rotation = odom_quat;
+				odom_trans.transform.translation.z = 0.0;
+				odom_trans.transform.rotation = odom_quat;
 
-        odom_broadcaster_.sendTransform(odom_trans);
+				odom_broadcaster_.sendTransform(odom_trans);
 
-        nav_msgs::Odometry odom;
-        odom.header.stamp = Time::now();
-        odom.header.frame_id = "odom";
+				nav_msgs::Odometry odom;
+				odom.header.stamp = Time::now();
+				odom.header.frame_id = "odom";
 
-        odom.pose.pose.position.x = x;
-        odom.pose.pose.position.y = y;
-        odom.pose.pose.position.z = 0.0;
-        odom.pose.pose.orientation = odom_quat;
+				odom.pose.pose.position.x = x;
+				odom.pose.pose.position.y = y;
+				odom.pose.pose.position.z = 0.0;
+				odom.pose.pose.orientation = odom_quat;
 
-        odom.child_frame_id = "base_link";
-        odom.twist.twist.linear.x = vx;
-        odom.twist.twist.angular.z = vth;
+				odom.child_frame_id = "base_link";
+				odom.twist.twist.linear.x = vx;
+				odom.twist.twist.angular.z = vth;
 
-        odom_pub.publish(odom);
+				odom_pub.publish(odom);
 
-    }
+				}
+ */
+		double vAgent::convertSteeringAngleToAngularVelocity(const double cvel, const double cang)
+		{
+			//odom related parameters
+			static const double RAD2DEG = 180.0 / M_PI;
+			static const double DEG2RAD = M_PI / 180.0;
+
+			static const double minimum_turning_radius = 5.3;
+			static const double maximum_steering_angle = 462.5;
+			static const double wheel_base = 2.65;
+			static const double maximum_tire_angle_deg =
+				(asin(wheel_base / minimum_turning_radius) * RAD2DEG); // deg
+			//odom related paramteres end
+
+			double current_tire_angle = maximum_tire_angle_deg * (cang / maximum_steering_angle) * DEG2RAD;
+			double current_angular_velocity =
+				tan(current_tire_angle) * cvel / wheel_base;
+			return current_angular_velocity;
+		}
+		void vAgent::updateOdometry(const double vx, const double ang, const ros::Time &cur_time)
+		{
+			tf::TransformBroadcaster odom_broadcaster_;
+			//
+			static const double GwayAngle2SteeringAngle = 0.1055;
+			double cur_steering_angle = ang * GwayAngle2SteeringAngle;
+			std::cout << "vx, angle : " << vx << ' ' << cur_steering_angle << '\n';
+			double vth = convertSteeringAngleToAngularVelocity(vx, cur_steering_angle);
+
+			double dt = (cur_time - stamp).toSec();
+			if (dt > 100.0){
+				stamp = cur_time;
+				return;
+			}
+			double delta_x = (vx * cos(th)) * dt;
+			double delta_y = (vx * sin(th)) * dt;
+			double delta_th = vth * dt;
+
+			ROS_INFO("dt : %lf delta(x y th) : (%lf %lf %lf)", dt, delta_x, delta_y, delta_th);
+
+			x += delta_x;
+			y += delta_y;
+			th += delta_th;
+			stamp = cur_time;
+
+			geometry_msgs::Quaternion odom_quat = tf::createQuaternionMsgFromYaw(th);
+
+			geometry_msgs::TransformStamped odom_trans;
+			odom_trans.header.stamp = Time::now();
+			odom_trans.header.frame_id = "odom";
+			odom_trans.child_frame_id = "base_link";
+
+			odom_trans.transform.translation.x = x;
+			odom_trans.transform.translation.y = y;
+			odom_trans.transform.translation.z = 0.0;
+			odom_trans.transform.rotation = odom_quat;
+
+			odom_broadcaster_.sendTransform(odom_trans);
+
+			nav_msgs::Odometry odom;
+			odom.header.stamp = Time::now();
+			odom.header.frame_id = "odom";
+
+			odom.pose.pose.position.x = x;
+			odom.pose.pose.position.y = y;
+			odom.pose.pose.position.z = 0.0;
+			odom.pose.pose.orientation = odom_quat;
+
+			odom.child_frame_id = "base_link";
+			odom.twist.twist.linear.x = vx;
+			odom.twist.twist.angular.z = vth;
+
+			odom_pub.publish(odom);
+		}
 
     void vAgent::processRecvmsg(message *msg)
     {
@@ -192,7 +265,7 @@ namespace vcsAgent
             graph_pub.publish(mon_val);
         }
         else if(msg->param_id == 21) tmp_a = msg->param_val;
-        if(tmp_v) updateOdometry(tmp_v, tmp_a, ros::Time::now());
+        updateOdometry(tmp_v, tmp_a, ros::Time::now());
     }
 
     int vAgent::MainLoop()
