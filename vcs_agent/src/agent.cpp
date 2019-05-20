@@ -22,6 +22,18 @@ namespace vcsAgent
     void vAgent::sendtovcs(message *msg)
     {
         int bytecount = 0;
+        if(msg->param_id == 16) buffer[0] = msg->param_val;//for printStatusBar
+        if((msg->param_id == 2) && (msg->param_val == 1)) 
+        {
+            cout<<"send tvel"<<endl;
+            becat = 1;//ecat on 
+        }
+        else if((msg->param_id == 1) || ((msg->param_id == 2) && (msg->param_val == 2)))
+        {
+            cout<<"can't send tvel"<<endl;
+            becat = 0;//f or ecat off
+        }
+        
         if(msg->result_code == 0)
         { 
             cout << "sendtovcs: seq_no "<<msg->seq_no<<endl;
@@ -81,9 +93,6 @@ namespace vcsAgent
             vcs_cmd_msg = parse_handler((char*)cmd.c_str());
             sendtovcs(&vcs_cmd_msg);
         }
-        if(vcs_cmd_msg.param_id == 16) buffer[0] = vcs_cmd_msg.param_val;//for printStatusBar
-        if((vcs_cmd_msg.param_id == 2) && (vcs_cmd_msg.param_val == 1)) becat = 1;//ecat on 
-        else if((vcs_cmd_msg.param_id == 1) || ((vcs_cmd_msg.param_id == 2) && (vcs_cmd_msg.param_val == 2))) becat = 0;//f or ecat off
     }
 
     void vAgent::twistCallback(const geometry_msgs::TwistStampedConstPtr &input_msg)
