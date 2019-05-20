@@ -20,9 +20,25 @@ char white[] = {0x1b, '[', '1', ';', '3', '7', 'm', 0};
 void printStatusBar(const vcs_mon::graph::ConstPtr& msg)
 {
     int i;
+    int switch_color = 1;
+
     for (i = 0; i < (int)msg->cvel; i++)
     {
-        cout << light_green;
+	if(i % 10 == 0)
+	{
+           cout << light_green;
+	   if(switch_color == 1)
+	   {
+		cout << light_green;
+		switch_color = 0;
+ 	   }
+	   else if(switch_color == 0)
+	   {
+		cout << green;
+		switch_color = 1;
+ 	   }
+
+	}
         cout << "0";
     }
     cout << endl;
