@@ -19,8 +19,22 @@ char white[] = {0x1b, '[', '1', ';', '3', '7', 'm', 0};
 
 int hzCt = 0;
 int pktCnt = 0;
+float ndtscore = 0;
+int cvel = 0;
+int tvel = 0;
+
+int mps_to_kmh(double act_vel)
+{
+    return (int)(act_vel * 3.6);
+}
 
 void printStatusBar(const vcs_mon::graph::ConstPtr& msg)
+{
+    cvel = mps_to_kmh(msg->cvel);
+    tvel = msg->tvel;
+}
+
+void scoreCallback(const vcs_mon::NDTStat::ConstPtr &msg)
 {
     pktCnt++;
     if(pktCnt == hzCt)
@@ -28,7 +42,7 @@ void printStatusBar(const vcs_mon::graph::ConstPtr& msg)
         int i;
         int switch_color = 1;
 
-        for (i = 0; i < (int)msg->cvel; i++)
+        for (i = 0; i < cvel; i++)
         {
             if(i % 10 == 0)
             {
@@ -48,29 +62,31 @@ void printStatusBar(const vcs_mon::graph::ConstPtr& msg)
             cout << "0";
         }
         cout << endl;
+        cout <<  msg->score <<endl;
 
-        for (i = 0; i < (int)(msg->tvel); i++)
+        for (i = 0; i < (tvel); i++)
         {
             cout << " ";
         }
         cout << yellow << "^\n";
 
-        for (i = 0; i < (int)(msg->tvel - 1); i++)
+        for (i = 0; i <(tvel - 1); i++)
         {
             cout << " ";
         }
-        cout << yellow << msg->tvel << endl;
+        cout << yellow << tvel << endl;
         cout << white;
         pktCnt = 0;
     }
-}   
+
+}
 
 int main(int argc, char **argv)
 {
     ros::init(argc, argv, "vcs_mon");
     ros::NodeHandle nh;
-    ros::Subscriber graph_msg_sub = nh.subscribe("/graph_value",1,printStatusBar);
-
+    ros::Subscriber graph_msg_sub = nh.subscribe("/graph_value",100,printStatusBar);
+    ros::Subscriber score_sub = nh.subscribe("ndt_stat", 100, scoreCallback);
     if(argv[1] == NULL) 
     {
         printf("set print hz\n");
@@ -83,11 +99,8 @@ int main(int argc, char **argv)
         return 1;
     }
 
+		ros::Rate rate(10);
     printf("set hz %d\n", hzCt);
-
-    while(ros::ok())
-    {
-        ros::spinOnce();
-    }
+	spin();
     return 0;
 }

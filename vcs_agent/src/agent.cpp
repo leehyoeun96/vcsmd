@@ -3,8 +3,9 @@ namespace vcsAgent
 {
     vAgent::vAgent()
     {
-        client_sub = nh.subscribe("/twist_cmd",1,&vAgent::twistCallback,this);
-        vcs_msg_sub = nh.subscribe("/vcs_msg",1,&vAgent::VCSstartupCallback,this);
+        client_sub = nh.subscribe("/twist_cmd",100,&vAgent::twistCallback,this);
+        vcs_msg_sub = nh.subscribe("/vcs_msg",100,&vAgent::VCSstartupCallback,this);
+        estop_sub = nh.subscribe("/mission_estop",100,&vAgent::estopCallback,this);
 
         agent_pub = nh.advertise<vcs_agent::vcs>("/vcs_ack", 10);
         graph_pub = nh.advertise<vcs_agent::mon>("/graph_value", 10);
@@ -53,13 +54,35 @@ namespace vcsAgent
         else if(msg->result_code == -1)
             cout<<"sendtovcs: unknown command"<<endl;
     }
+    void vAgent::estopCallback(const vcs_agent::estopMsg::ConstPtr& msg)
+    {
+        if(msg->estop)
+        {
+            if(!becat)
+            {
+                cout<<"ecat up/on first"<<endl;
+                return;
+            }
+            message packet;
+
+            string set_vel ("set cruisecontrol.target_velocity ");
+            string dtos;
+
+            dtos = to_string(-1);
+            set_vel += dtos;
+            set_vel += "\n";
+            packet = parse_handler((char*)set_vel.c_str());
+            sendtovcs(&packet);
+        }
+    }
+
     void vAgent::VCSstartupCallback(const vcs_agent::Message1::ConstPtr& msg)
     {   
         message vcs_cmd_msg;
         vcs_cmd_msg.result_code = 0;
-        if((msg->command).compare("start vcs") == 0)//start vcs
+        if((msg->command).compare("vcs up") == 0)
         {
-            FILE *fp = fopen(STARTUP_DIR,"r");
+            FILE *fp = fopen(VCSUP_DIR,"r");
 
             char file_buf[50]={0,};
             if(fp != NULL)
@@ -75,33 +98,69 @@ namespace vcsAgent
             }
             else cout << "can't read file" <<endl;
         }
-        else if((msg->command).compare("finish vcs") == 0)//finish vcs
+        else if((msg->command).compare("vcs on") == 0)
         {
-            FILE *fp = fopen(FINISH_DIR,"r");
+            FILE *fp = fopen(VCSON_DIR,"r");
 
-            char file_buf[50]={0,};
-            if(fp != NULL)
-            {
-                while(1)
-                {   
-                    fgets(file_buf, sizeof(file_buf),fp);
-                    if(feof(fp)) break;
-                    vcs_cmd_msg = parse_handler(file_buf);
-                    sendtovcs(&vcs_cmd_msg);
-                }
-                fclose(fp);
-            }
-            else cout << "can't read file" <<endl;
-        }
-        else if((msg->command).compare("pose lidar") == 0) //pose lidar
-        {
-            string set_pose ("set poselidar.mode ");
+            //setting ecat num motors
+            string set_num_motors ("set ecat.num_motors ");
             string dtos; 
             dtos = to_string(msg->value);
-            set_pose += dtos;
-            set_pose += "\n";
-            vcs_cmd_msg = parse_handler((char*)set_pose.c_str());
+            set_num_motors += dtos;
+            set_num_motors += "\n";
+            vcs_cmd_msg = parse_handler((char*)set_num_motors.c_str());
             sendtovcs(&vcs_cmd_msg);
+            //
+
+            char file_buf[50]={0,};
+            if(fp != NULL)
+            {
+                while(1)
+                {   
+                    fgets(file_buf, sizeof(file_buf),fp);
+                    if(feof(fp)) break;
+                    vcs_cmd_msg = parse_handler(file_buf);
+                    sendtovcs(&vcs_cmd_msg);
+                }
+                fclose(fp);
+            }
+            else cout << "can't read file" <<endl;
+        }
+        else if((msg->command).compare("vcs off") == 0)
+        {
+            FILE *fp = fopen(VCSOFF_DIR,"r");
+
+            char file_buf[50]={0,};
+            if(fp != NULL)
+            {
+                while(1)
+                {   
+                    fgets(file_buf, sizeof(file_buf),fp);
+                    if(feof(fp)) break;
+                    vcs_cmd_msg = parse_handler(file_buf);
+                    sendtovcs(&vcs_cmd_msg);
+                }
+                fclose(fp);
+            }
+            else cout << "can't read file" <<endl;
+        }
+        else if((msg->command).compare("vcs down") == 0)
+        {
+            FILE *fp = fopen(VCSDOWN_DIR,"r");
+
+            char file_buf[50]={0,};
+            if(fp != NULL)
+            {
+                while(1)
+                {   
+                    fgets(file_buf, sizeof(file_buf),fp);
+                    if(feof(fp)) break;
+                    vcs_cmd_msg = parse_handler(file_buf);
+                    sendtovcs(&vcs_cmd_msg);
+                }
+                fclose(fp);
+            }
+            else cout << "can't read file" <<endl;
         }
         else
         {
@@ -121,7 +180,6 @@ namespace vcsAgent
             return;
         }
         message packet;
-        int bytecount = 0;
 
         string set_vel ("set cruisecontrol.target_velocity ");
         string set_ang ("set steercontrol.target_angular_velocity ");
@@ -142,69 +200,7 @@ namespace vcsAgent
         packet = parse_handler((char*)set_ang.c_str());
         sendtovcs(&packet);
     }
-/*    double vAgent::convertSteeringAngleToAngularVelocity(const double cvel, const double cang)
-    {
-        double pi = 3.141592;
-        double minimum_turning_radius = 10.6;
-        double maximum_steering_angle = 925.2;
-        double wheel_base = 2.65;
-        double maximum_tire_angle = (asin(wheel_base / (minimum_turning_radius))) * 180 / pi;
-        double current_tire_angle = cang / maximum_steering_angle * maximum_tire_angle;
 
-        return tan((current_tire_angle)*pi/180) * cvel / wheel_base;
-    }
-    void vAgent::updateOdometry(const double vx, const double ang, const ros::Time &cur_time)
-    {
-        tf::TransformBroadcaster odom_broadcaster_;
-        double vth = convertSteeringAngleToAngularVelocity(vx, ang*0.45);
-
-        double dt = (cur_time - stamp).toSec();
-        if (dt > 100.0){
-            stamp = cur_time;
-            return;
-        }
-        double delta_x = (vx * cos(th)) * dt;
-        double delta_y = (vx * sin(th)) * dt;
-        double delta_th = vth * dt;
-
-        ROS_INFO("dt : %lf delta(x y th) : (%lf %lf %lf)", dt, delta_x, delta_y, delta_th);
-
-        x += delta_x;
-        y += delta_y;
-        th += delta_th;
-        stamp = cur_time;
-
-        geometry_msgs::Quaternion odom_quat = tf::createQuaternionMsgFromYaw(th);
-
-        geometry_msgs::TransformStamped odom_trans;
-        odom_trans.header.stamp = Time::now();
-        odom_trans.header.frame_id = "odom";
-        odom_trans.child_frame_id = "base_link";
-
-        odom_trans.transform.translation.x = x;
-        odom_trans.transform.translation.y = y;
-				odom_trans.transform.translation.z = 0.0;
-				odom_trans.transform.rotation = odom_quat;
-
-				odom_broadcaster_.sendTransform(odom_trans);
-
-				nav_msgs::Odometry odom;
-				odom.header.stamp = Time::now();
-				odom.header.frame_id = "odom";
-
-				odom.pose.pose.position.x = x;
-				odom.pose.pose.position.y = y;
-				odom.pose.pose.position.z = 0.0;
-				odom.pose.pose.orientation = odom_quat;
-
-				odom.child_frame_id = "base_link";
-				odom.twist.twist.linear.x = vx;
-				odom.twist.twist.angular.z = vth;
-
-				odom_pub.publish(odom);
-
-				}
- */
 		double vAgent::convertSteeringAngleToAngularVelocity(const double cvel, const double cang)
 		{
 			//odom related parameters
@@ -343,7 +339,6 @@ namespace vcsAgent
         int event_cnt;
         int epfd;
         struct epoll_event ev, evs[MAX_EVENTS];
-
         epfd=epoll_create1(0);
         ev.events = EPOLLIN;
         ev.data.fd = vcsd_sd;

@@ -17,6 +17,7 @@ find_package(catkin REQUIRED COMPONENTS
  add_message_files(
    FILES
    graph.msg
+   NDTStat.msg
  )
 
 ## Generate added messages and services with any dependencies listed here

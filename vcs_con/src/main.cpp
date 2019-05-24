@@ -17,12 +17,19 @@ int main(int argc, char** argv)
     ros::Publisher kbd_pub = nh.advertise<vcs_con::Message>("/vcs_msg",100);
     ros::Rate loop_rate(10);
     string cmd;
+    string val;
     cout<<"hello!"<<endl;
     while(ros::ok())
     {
         getline(cin,cmd);
         msg.command = cmd;
-        msg.value = 0;
+        if(cmd.compare("vcs on") == 0)
+            {
+                cout<<"Enter ECAT.num_motors : ";
+                getline(cin,val);
+                msg.value = stoi(val);
+            }
+        else  msg.value = 0;
         kbd_pub.publish(msg);
     }
 }

@@ -1,0 +1,3 @@
+set ecat up
+set ecat on
+set CAN.pub2agent 1

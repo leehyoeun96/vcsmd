@@ -21,6 +21,7 @@ add_compile_options(-std=c++11)
             FILES
             Message1.msg
             vcs.msg
+            estopMsg.msg
             mon.msg
             )
 

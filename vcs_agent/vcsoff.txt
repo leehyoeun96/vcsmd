@@ -1,0 +1,2 @@
+set ecat down
+set CAN.pub2agent 0

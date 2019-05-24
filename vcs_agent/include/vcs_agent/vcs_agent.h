@@ -12,6 +12,7 @@
 #include <ros/package.h>
 #include <geometry_msgs/TwistStamped.h>
 #include "vcs_agent/vcs.h"
+#include "vcs_agent/estopMsg.h"
 #include "vcs_agent/umsg.h"
 #include <regex.h>
 #include <math.h>
@@ -29,10 +30,12 @@
 
 #define MAX_EVENTS 10 
 #define BUF_SIZE 255 
-#define IP_ADDR "127.0.0.1"
-//#define IP_ADDR "192.168.0.8"
-#define STARTUP_DIR "/home/rubicom/catkin_ws/src/vcs_agent/start_up.txt"
-#define FINISH_DIR "/home/rubicom/catkin_ws/src/vcs_agent/finish.txt"
+//#define IP_ADDR "127.0.0.1"
+#define IP_ADDR "192.168.0.4"
+#define VCSUP_DIR "/home/rubicom/catkin_ws/src/vcs_agent/vcsup.txt"
+#define VCSON_DIR "/home/rubicom/catkin_ws/src/vcs_agent/vcson.txt"
+#define VCSOFF_DIR "/home/rubicom/catkin_ws/src/vcs_agent/vcsoff.txt"
+#define VCSDOWN_DIR "/home/rubicom/catkin_ws/src/vcs_agent/vcsdown.txt"
 using namespace std;
 using namespace ros;
 
@@ -48,6 +51,7 @@ namespace vcsAgent
             ros::Publisher graph_pub;
             ros::Subscriber client_sub; 
             ros::Subscriber vcs_msg_sub;
+            ros::Subscriber estop_sub;
             ros::NodeHandle nh;
 
             bool becat = 0;
@@ -71,6 +75,7 @@ namespace vcsAgent
             double convert_mps_to_kmh(double linear_x);
             void VCSstartupCallback(const vcs_agent::Message1::ConstPtr& msg);
             void twistCallback(const geometry_msgs::TwistStampedConstPtr &input_msg);
+            void estopCallback(const vcs_agent::estopMsg::ConstPtr& msg);
             void sendtovcs(message *msg);
             void updateOdometry(const double vx, const double ang, const ros::Time &cur_time);
             void processRecvmsg(message *msg);
