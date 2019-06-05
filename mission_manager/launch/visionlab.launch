@@ -1,0 +1,105 @@
+<launch>
+    <!-- Camera -->    
+    <arg name="fps" default="20"/>                  <!--frame per second to try to acquire the image -->
+    <arg name="CalibrationFile" default=""/>        <!--Path to Autoware calibration format file-->
+    <arg name="mode" default="0"/>                  <!--Valid Camera Mode -->
+    <arg name="format" default="raw"/>              <!--Pixel Format to acquire the image "raw" or "rgb"-->
+    <arg name="timeout" default="1000"/>            <!--Timeout in mili seconds-->
+
+    <node pkg="autoware_pointgrey_drivers" type="grasshopper3_camera" name="grasshopper" output="screen">
+	<param name="fps" value="$(arg fps)"/>
+	<param name="calibrationfile" value="$(arg CalibrationFile)"/>
+	<param name="mode" value="$(arg mode)"/>
+	<param name="format" value="$(arg format)"/>
+	<param name="timeout" value="$(arg timeout)"/>
+    </node>
+
+    <!-- Calibration Publisher -->
+    <arg name="image_src" default="/image_raw" />
+    <arg name="camera_info_src" default="/camera_info" />
+    <arg name="left_camera_id" default="/camera1" />
+    <arg name="right_camera_id" default="/camera0" />
+    <arg name="left_intrinsics_file" default="/home/autoware/shared_dir/vision_files/0429_left" />
+    <arg name="right_intrinsics_file" default="/home/autoware/shared_dir/vision_files/0429_right" />
+    <arg name="compressed_stream" default="false" />
+    <arg name="target_frame" default="velodyne"/>
+    <arg name="left_camera_frame" default="camera_left"/>
+    <arg name="right_camera_frame" default="camera_right"/>
+
+    <node pkg="calibration_camera_lidar" type="calibration_publisher" name="left_calibration_publisher" ns="$(arg left_camera_id)">
+        <param name="register_lidar2camera_tf" type="bool" value="true"/>
+        <param name="publish_extrinsic_mat" type="bool" value="true"/>
+        <param name="publish_camera_info" type="bool" value="true"/>
+        <param name="image_topic_src" value="$(arg image_src)"/>
+        <param name="calibration_file" value="$(arg left_intrinsics_file)"/>
+        <param name="target_frame" type="str" value="$(arg target_frame)"/>
+        <param name="camera_frame" type="str" value="$(arg left_camera_frame)"/>
+    </node>
+
+    <node pkg="calibration_camera_lidar" type="calibration_publisher" name="right_calibration_publisher" ns="$(arg right_camera_id)">
+        <param name="register_lidar2camera_tf" type="bool" value="true"/>
+        <param name="publish_extrinsic_mat" type="bool" value="true"/>
+        <param name="publish_camera_info" type="bool" value="true"/>
+        <param name="image_topic_src" value="$(arg image_src)"/>
+        <param name="calibration_file" value="$(arg right_intrinsics_file)"/>
+        <param name="target_frame" type="str" value="$(arg target_frame)"/>
+        <param name="camera_frame" type="str" value="$(arg right_camera_frame)"/>
+    </node>
+
+    <!-- YOLO v3 -->
+    <rosparam file="$(find vision_darknet_detect)/cfg/icthus_detect_cfg.yaml" command="load"/>
+
+    <arg name="gpu_device_id" default="0"/>
+    <arg name="score_threshold" default="0.5"/>
+    <arg name="nms_threshold" default="0.45"/>
+    <arg name="network_definition_file" default="/home/autoware/shared_dir/vision_files/yolov3.cfg"/>
+    <arg name="pretrained_model_file" default="/home/autoware/shared_dir/vision_files/yolov3.weights"/>
+    <arg name="names_file" default="/home/autoware/shared_dir/vision_files/coco.names"/>
+    <arg name="ann_path" default="/home/autoware/shared_dir/vision_files/annfileishere2.yml"/>
+    <arg name="camera_id" default="/"/>
+    <arg name="resize_ratio" default="1.0"/>
+    <arg name="left_image_raw_node" default="/camera1/image_raw"/>
+    <arg name="right_image_raw_node" default="/camera0/image_raw"/>
+    <node pkg="vision_darknet_detect" name="icthus_darknet_detect" type="icthus_darknet_detect" />
+
+    <!-- Vision based range fusion -->
+    <arg name="left_detected_objects_vision" default="/detection/image_detector/left_objects" />
+    <arg name="right_detected_objects_vision" default="/detection/image_detector/right_objects" />
+    <arg name="left_camera_name" default="left_camera" />
+    <arg name="right_camera_name" default="right_camera" />
+    <arg name="left_camera_info_src" default="/camera1/camera_info" />
+    <arg name="right_camera_info_src" default="/camera0/camera_info" />
+    <arg name="min_car_dimensions" default="[2,2,4]" />
+    <arg name="min_person_dimensions" default="[1,2,1]" />
+    <arg name="min_truck_dimensions" default="[2,2,4.5]" />
+    <arg name="sync_topics" default="true" />
+    <arg name="lidar_points_raw" default="/points_raw" />
+    <arg name="base_id" default="base_link" />
+
+    <node name="stereo_vision_based_range_fusion" pkg="range_vision_fusion" type="stereo_vision_based_range_fusion" >
+        <param name="left_detected_objects_vision" value="$(arg left_detected_objects_vision)" />
+        <param name="right_detected_objects_vision" value="$(arg right_detected_objects_vision)" />
+        <param name="left_camera_name" value="$(arg left_camera_name)" />
+        <param name="right_camera_name" value="$(arg right_camera_name)" />
+        <param name="left_camera_info_src" value="$(arg left_camera_info_src)" />
+        <param name="right_camera_info_src" value="$(arg right_camera_info_src)" />
+        <param name="min_car_dimensions" value="$(arg min_car_dimensions)" />
+        <param name="min_person_dimensions" value="$(arg min_person_dimensions)" />
+        <param name="min_truck_dimensions" value="$(arg min_truck_dimensions)" />
+        <param name="sync_topics" value="$(arg sync_topics)" />
+        <param name="lidar_points_raw" value="$(arg lidar_points_raw)" />
+        <param name="base_id" value="$(arg base_id)" />
+    </node>
+
+    <rosparam command="load" file="$(find object_manager)/cfg/manager_params.yaml" />    
+    <node pkg="object_manager" type="object_manager" name="object_manager" />
+
+    <rosparam command="load" file="$(find mission_tester)/cfg/default_params.cfg" />
+    <node pkg="mission_tester" type="mission_tester" name="mission_tester" output="screen" />
+
+    <node pkg="rqt_reconfigure" type="rqt_reconfigure" name="rqt_reconfigure"/>
+
+     <node pkg="v2x_object_detect" type="v2x_processor_main" name="v2x_processor_main" />
+    <rosparam command="load" file="$(find v2x_object_detect)/cfg/object_detect_parameters.cfg" />
+    <node pkg="parser" type="v2x_main" name="v2x_main" />
+</launch>

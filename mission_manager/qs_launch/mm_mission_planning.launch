@@ -1,0 +1,29 @@
+<launch>
+  <!-- setting path parameter -->
+  <arg name="enableRvizInput" default="true" />
+  <arg name="enableSmoothing" default="false" />
+  <arg name="topic_pose_stamped" default="/ndt_pose" />
+  <arg name="topic_twist_stamped" default="/estimate_twist" />
+  <arg name="sim_mode" default="false" /> !--when you drive in road, disable this mode--
+
+  <!-- vel_pose_mux -->
+  <include file="$(find autoware_connector)/launch/vel_pose_connect.launch">
+    <arg name="topic_pose_stamped" value="$(arg topic_pose_stamped)" />
+    <arg name="topic_twist_stamped" value="$(arg topic_twist_stamped)" />
+    <arg name="sim_mode" value="$(arg sim_mode)" />
+  </include>
+
+  <!-- global planner -->
+  <include file="$(find timed_roslaunch)/launch/timed_roslaunch.launch">
+       <arg name="time" value="0.5"/>
+       <arg name="pkg" value="op_global_planner"/>
+       <arg name="file" value="op_global_planner.launch"/>
+       <arg name="value" value="enableRvizInput:=$(arg enableRvizInput) enableSmoothing:=$(arg enableSmoothing)"/>
+       <arg name="node_name" value="timed_roslaunch_op_global_planner"/>
+ </include>
+   
+  <!-- twist_filter -->
+  <include file="$(find waypoint_follower)/launch/twist_filter.launch"/>
+  <include file="$(find waypoint_follower)/launch/wf_simulator.launch"/> !--when you drive in road, disable this line--
+
+</launch>

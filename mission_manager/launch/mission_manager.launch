@@ -1,11 +1,15 @@
 <launch>
-
   <!--runnig mission_manager-->
-  <node name ="mission_manager" pkg="mission_manager" type="mission_manager" output="screen"/>  
+  <node name="mission_manager" pkg="mission_manager" type="mission_manager" output="screen"/>  
 
-!--when you drive in road, disable this line--
+<!--when you drive in road, disable this line-->
   <!-- launch map -->
-  <include file="$(find mission_manager)/launch/map.launch"/>
+  <!--include file="$(find mission_manager)/launch/map.launch"/-->
+  
+  <!-- launch vision -->
+  <include file="$(find mission_manager)/launch/visionlab.launch"/>
 
 
+  <!-- launch vcs_node -->
+  <node pkg="mission_manager" type="vcs_node" name="vcs_node" args=""/>
 </launch>

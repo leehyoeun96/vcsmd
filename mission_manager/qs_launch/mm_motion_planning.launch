@@ -1,0 +1,39 @@
+<launch>
+
+  <!-- local planner -->
+  <arg name = "cfg_path" default="$(find mission_manager)/cfg/motion_planning.yaml"/>
+
+  <include file="$(find op_local_planner)/launch/op_trajectory_generator.launch"/>
+  <!--include file="$(find op_local_planner)/launch/op_motion_predictor.launch"-->
+        <!--arg name="enableCurbObstacles" default="$(arg enableCurbObstacles)" /-->
+  <!--/include-->
+  <include file="$(find op_local_planner)/launch/op_trajectory_evaluator.launch">
+        <!--arg name="enablePrediction" default="$(arg enablePrediction)" /-->
+  </include>
+  <include file="$(find op_local_planner)/launch/op_behavior_selector.launch"/>
+  
+  <rosparam command="load" file="$(arg cfg_path)"/>
+  
+  <!--setting pure_pursuit -->
+  <node pkg="rostopic" type="rostopic" name="config_waypoint_follower_rostopic"
+        args="pub -l /config/waypoint_follower autoware_config_msgs/ConfigWaypointFollower
+              '{ header: auto, 
+		param_flag: 0, 
+		velocity: 5.0, 
+		lookahead_distance: 4.0, 
+		lookahead_ratio: 2.5, 
+		minimum_lookahead_distance: 12.0, 
+		displacement_threshold: 0.0, 
+		relative_angle_threshold: 0.0 }' "
+  />
+
+  <!--runnig pure_pursuit-->
+  <include file="$(find timed_roslaunch)/launch/timed_roslaunch.launch">
+        <arg name="time" value="3"/>
+        <arg name="pkg" value="waypoint_follower"/>
+        <arg name="file" value="pure_pursuit.launch"/>
+        <arg name="value" value=""/>
+        <arg name="node_name" value="timed_roslaunch"/>
+  </include>
+
+</launch>

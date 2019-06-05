@@ -40,3 +40,11 @@ include_directories(
  target_link_libraries(${PROJECT_NAME}
    ${catkin_LIBRARIES}
  )
+
+ add_executable(mission_manager_test src/mission_manager_test.cpp src/mission_manager_test_node.cpp)
+ add_dependencies(mission_manager_test mision_manager_generate_messages_cpp)
+
+## Specify libraries to link a library or executable target against
+ target_link_libraries(mission_manager_test
+   ${catkin_LIBRARIES}
+ )

@@ -1,0 +1,61 @@
+<launch>
+    <!-- YOLO v3 -->    
+    <arg name="gpu_device_id" default="0"/>
+    <arg name="score_threshold" default="0.5"/>
+    <arg name="nms_threshold" default="0.45"/>
+    <arg name="network_definition_file" default="/home/autoware/shared_dir/vision_files/yolov3-416.cfg"/>
+    <arg name="pretrained_model_file" default="/home/autoware/shared_dir/vision_files/yolov3_416.weights"/>
+    <arg name="names_file" default="/home/autoware/shared_dir/vision_files/coco.names"/>
+    <arg name="ann_path" default="/home/autoware/shared_dir/vision_files/annfileishere2.yml"/>
+    <arg name="camera_id" default="/"/>
+    <arg name="resize_ratio" default="1.0"/>
+    <arg name="left_camera_id" default="left_camera"/>
+    <arg name="right_camera_id" default="right_camera"/>
+    <arg name="left_image_raw_node" default="/camera1/image_raw"/>
+    <arg name="right_image_raw_node" default="/camera0/image_raw"/>
+    
+    <node pkg="vision_darknet_detect" name="icthus_darknet_detect" type="icthus_darknet_detect">
+	<param name="gpu_device_id" value="$(arg gpu_device_id)"/>
+	<param name="score_threshold" value="$(arg score_threshold)"/>
+	<param name="nms_threshold" value="$(arg nms_threshold)"/>
+	<param name="network_definition_file" value="$(arg network_definition_file)"/>
+	<param name="pretrained_model_file" value="$(arg pretrained_model_file)"/>
+	<param name="names_file" value="$(arg names_file)"/>
+	<param name="ann_path" value="$(arg ann_path)"/>
+	<param name="camera_id" value="$(arg camera_id)"/>
+	<param name="resize_ratio" value="$(arg resize_ratio)"/>
+	<param name="left_camera_id" value="$(arg left_camera_id)"/>
+	<param name="right_camera_id" value="$(arg right_camera_id)"/>
+	<param name="left_image_raw_node" value="$(arg left_image_raw_node)"/>
+	<param name="right_image_raw_node" value="$(arg right_image_raw_node)"/>
+    </node>
+
+    <!-- Vision based range fusion -->
+    <arg name="left_detected_objects_vision" default="/detection/image_detector/left_objects" />
+    <arg name="right_detected_objects_vision" default="/detection/image_detector/right_objects" />
+    <arg name="left_camera_name" default="left_camera" />
+    <arg name="right_camera_name" default="right_camera" />
+    <arg name="left_camera_info_src" default="/camera1/camera_info" />
+    <arg name="right_camera_info_src" default="/camera0/camera_info" />
+    <arg name="min_car_dimensions" default="[2,2,4]" />
+    <arg name="min_person_dimensions" default="[1,2,1]" />
+    <arg name="min_truck_dimensions" default="[2,2,4.5]" />
+    <arg name="sync_topics" default="true" />
+    <arg name="lidar_points_raw" default="/points_raw" />
+    <arg name="base_id" default="base_link" />
+
+    <node name="stereo_vision_based_range_fusion" pkg="range_vision_fusion" type="stereo_vision_based_range_fusion" >
+        <param name="left_detected_objects_vision" value="$(arg left_detected_objects_vision)" />
+        <param name="right_detected_objects_vision" value="$(arg right_detected_objects_vision)" />
+        <param name="left_camera_name" value="$(arg left_camera_name)" />
+        <param name="right_camera_name" value="$(arg right_camera_name)" />
+        <param name="left_camera_info_src" value="$(arg left_camera_info_src)" />
+        <param name="right_camera_info_src" value="$(arg right_camera_info_src)" />
+        <param name="min_car_dimensions" value="$(arg min_car_dimensions)" />
+        <param name="min_person_dimensions" value="$(arg min_person_dimensions)" />
+        <param name="min_truck_dimensions" value="$(arg min_truck_dimensions)" />
+        <param name="sync_topics" value="$(arg sync_topics)" />
+        <param name="lidar_points_raw" value="$(arg lidar_points_raw)" />
+        <param name="base_id" value="$(arg base_id)" />
+    </node>
+</launch>

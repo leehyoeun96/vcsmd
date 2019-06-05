@@ -54,10 +54,11 @@ namespace vcsAgent
         else if(msg->result_code == -1)
             cout<<"sendtovcs: unknown command"<<endl;
     }
-    void vAgent::estopCallback(const vcs_agent::estopMsg::ConstPtr& msg)
+    void vAgent::estopCallback(const std_msgs::BoolConstPtr& msg)
     {
-        if(msg->estop)
+        if(msg->data == true)
         {
+		estop_flag = true;
             if(!becat)
             {
                 cout<<"ecat up/on first"<<endl;
@@ -73,7 +74,9 @@ namespace vcsAgent
             set_vel += "\n";
             packet = parse_handler((char*)set_vel.c_str());
             sendtovcs(&packet);
+
         }
+	else estop_flag = false;
     }
 
     void vAgent::VCSstartupCallback(const vcs_agent::Message1::ConstPtr& msg)
@@ -177,6 +180,11 @@ namespace vcsAgent
         if(!becat)
         {
             cout<<"ecat up/on first"<<endl;
+            return;
+        }
+        if(estop_flag)
+        {
+            cout<<"estop on"<<endl;
             return;
         }
         message packet;

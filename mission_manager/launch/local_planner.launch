@@ -1,7 +1,7 @@
 <launch>
 
   <!-- local planner -->
-  <arg name="maxVelocity" default="3.0" />
+  <arg name="maxVelocity" default="2.0" />
   <include file="$(find op_local_planner)/launch/op_common_params.launch">
   	<arg name="maxVelocity" default="$(arg maxVelocity)" />
   </include>
@@ -17,7 +17,7 @@
 
   <!--runnig pure_pursuit-->
   <include file="$(find timed_roslaunch)/launch/timed_roslaunch.launch">
-	<arg name="time" value="1"/>
+	<arg name="time" value="3"/>
 	<arg name="pkg" value="waypoint_follower"/>
 	<arg name="file" value="pure_pursuit.launch"/>
 	<arg name="value" value=""/>

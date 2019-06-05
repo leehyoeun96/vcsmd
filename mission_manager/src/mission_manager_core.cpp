@@ -34,12 +34,12 @@ namespace mManagerNS
  void mManager::CleanAndStart()
  {
 	//shutdown
-	int stat = system(SHUTDOWN_DIR);
+	int stat = system("/home/autoware/Autoware/ros/src/util/packages/mission_manager/script/shutdown");
 	//restart
 	stat = system("roslaunch mission_manager global_planner.launch &");
 	sleep(5);
 	
-	pub_initial_pose.publish(initialpose_msg); //when you drive in road, disable this line
+//	pub_initial_pose.publish(initialpose_msg); //when you drive in road, disable this line
 	pub_goal_pose.publish(goalpose_msg);
 	stat = system("roslaunch mission_manager local_planner.launch &");
  }
@@ -49,11 +49,10 @@ namespace mManagerNS
 	int margin = 5;
 	double cur_goal_x, cur_goal_y;
 	double* goal;	
-//	cout<<"missionNo : "<<missionNo<<endl;
 	if(missionNo > MAX_MISSION)
 	{
 		cout<<"end!!"<<endl;
-		int stat = system(SHUTDOWN_DIR);
+		int stat = system("/home/autoware/Autoware/ros/src/util/packages/mission_manager/script/shutdown");
 		exit(0);
 	}
 	goal = goal_pose[missionNo];
@@ -158,6 +157,7 @@ namespace mManagerNS
 
  void mManager::MainLoop()
  {
+	int stat;
 	ros::Rate loop_rate(10);
 	for(int i = 0; i<2;i++)
 	{	
@@ -165,6 +165,7 @@ namespace mManagerNS
 		getline(cin, message);
 		settingVCS(message);
 	}
+	
 	settingPoseMsg(init_pose, goal_pose[0]);
 	CleanAndStart();
 	//epoll setting//

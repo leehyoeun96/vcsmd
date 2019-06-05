@@ -1,0 +1,14 @@
+<launch>
+
+  <!-- TF -->
+  <include file="$(find mission_manager)/now_hyo/tf.launch"/>
+
+  <!-- Point Cloud Map -->
+  <!--node pkg="map_file" type="points_map_loader" name="points_map_loader" args="noupdate $(find mission_manager)/now_hyo/20190507_soongsil_0.2.pcd" /-->
+  <node pkg="map_file" type="points_map_loader" name="points_map_loader" args="noupdate $(find mission_manager)/now_hyo/20190420_kcity_0.2.pcd" />
+  <!--node pkg="map_file" type="points_map_loader" name="points_map_loader" args="noupdate $(find mission_manager)/now_hyo/soongsil_fullmap_fast_binary.pcd" /-->
+
+  <!-- Vector Map -->
+  <node pkg="map_file" type="vector_map_loader" name="vector_map_loader" args="$(find mission_manager)/now_hyo/complete_0524/3/dtlane.csv $(find mission_manager)/now_hyo/complete_0524/3/idx.csv $(find mission_manager)/now_hyo/complete_0524/3/lane.csv $(find mission_manager)/now_hyo/complete_0524/3/node.csv $(find mission_manager)/now_hyo/complete_0524/3/point.csv" />
+
+</launch>

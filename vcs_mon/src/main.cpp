@@ -28,13 +28,7 @@ int mps_to_kmh(double act_vel)
     return (int)(act_vel * 3.6);
 }
 
-void printStatusBar(const vcs_mon::graph::ConstPtr& msg)
-{
-    cvel = mps_to_kmh(msg->cvel);
-    tvel = msg->tvel;
-}
-
-void scoreCallback(const vcs_mon::NDTStat::ConstPtr &msg)
+void printBarGraph()
 {
     pktCnt++;
     if(pktCnt == hzCt)
@@ -62,7 +56,6 @@ void scoreCallback(const vcs_mon::NDTStat::ConstPtr &msg)
             cout << "0";
         }
         cout << endl;
-        cout <<  msg->score <<endl;
 
         for (i = 0; i < (tvel); i++)
         {
@@ -75,12 +68,28 @@ void scoreCallback(const vcs_mon::NDTStat::ConstPtr &msg)
             cout << " ";
         }
         cout << yellow << tvel << endl;
-        cout << white;
+	if(ndtscore > 0.5)
+	     cout << light_red <<ndtscore <<endl;
+	else
+	     cout << light_blue <<ndtscore <<endl;
+        cout << white<< endl;
         pktCnt = 0;
     }
 
 }
 
+void printStatusBar(const vcs_mon::graph::ConstPtr& msg)
+{
+    cvel = mps_to_kmh(msg->cvel);
+    tvel = msg->tvel;
+	printBarGraph();
+}
+
+void scoreCallback(const vcs_mon::NDTStat::ConstPtr &msg)
+{
+	ndtscore = msg->score;
+	printBarGraph();
+}
 int main(int argc, char **argv)
 {
     ros::init(argc, argv, "vcs_mon");

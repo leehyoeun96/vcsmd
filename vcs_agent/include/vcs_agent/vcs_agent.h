@@ -12,7 +12,7 @@
 #include <ros/package.h>
 #include <geometry_msgs/TwistStamped.h>
 #include "vcs_agent/vcs.h"
-#include "vcs_agent/estopMsg.h"
+#include <std_msgs/Bool.h>
 #include "vcs_agent/umsg.h"
 #include <regex.h>
 #include <math.h>
@@ -32,10 +32,10 @@
 #define BUF_SIZE 255 
 //#define IP_ADDR "127.0.0.1"
 #define IP_ADDR "192.168.0.4"
-#define VCSUP_DIR "/home/rubicom/catkin_ws/src/vcs_agent/vcsup.txt"
-#define VCSON_DIR "/home/rubicom/catkin_ws/src/vcs_agent/vcson.txt"
-#define VCSOFF_DIR "/home/rubicom/catkin_ws/src/vcs_agent/vcsoff.txt"
-#define VCSDOWN_DIR "/home/rubicom/catkin_ws/src/vcs_agent/vcsdown.txt"
+#define VCSUP_DIR "/home/autoware/Autoware/ros/src/actuation/vehicles/packages/control_server/vcs_agent/vcsup.txt"
+#define VCSON_DIR "/home/autoware/Autoware/ros/src/actuation/vehicles/packages/control_server/vcs_agent/vcson.txt"
+#define VCSOFF_DIR "/home/autoware/Autoware/ros/src/actuation/vehicles/packages/control_server/vcs_agent/vcsoff.txt"
+#define VCSDOWN_DIR "/home/autoware/Autoware/ros/src/actuation/vehicles/packages/control_server/vcs_agent/vcsdown.txt"
 using namespace std;
 using namespace ros;
 
@@ -55,6 +55,7 @@ namespace vcsAgent
             ros::NodeHandle nh;
 
             bool becat = 0;
+            bool estop_flag = 0;
             double buffer[2];
             double x = 0; 
             double y = 0;
@@ -75,7 +76,7 @@ namespace vcsAgent
             double convert_mps_to_kmh(double linear_x);
             void VCSstartupCallback(const vcs_agent::Message1::ConstPtr& msg);
             void twistCallback(const geometry_msgs::TwistStampedConstPtr &input_msg);
-            void estopCallback(const vcs_agent::estopMsg::ConstPtr& msg);
+            void estopCallback(const std_msgs::BoolConstPtr& msg);
             void sendtovcs(message *msg);
             void updateOdometry(const double vx, const double ang, const ros::Time &cur_time);
             void processRecvmsg(message *msg);
