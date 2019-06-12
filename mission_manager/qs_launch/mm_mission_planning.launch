@@ -24,6 +24,6 @@
    
   <!-- twist_filter -->
   <include file="$(find waypoint_follower)/launch/twist_filter.launch"/>
-  <include file="$(find waypoint_follower)/launch/wf_simulator.launch"/> !--when you drive in road, disable this line--
+  <!--include file="$(find waypoint_follower)/launch/wf_simulator.launch"/--> !--when you drive in road, disable this line--
 
 </launch>

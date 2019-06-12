@@ -63,6 +63,8 @@ namespace vcsAgent
             ros::Time stamp;
             double tmp_v = 0;
             double tmp_a = 0;
+            double tmp_v_RL = 0;
+            double tmp_v_RR = 0;
 
 
             void regcomp_all();
@@ -78,7 +80,8 @@ namespace vcsAgent
             void twistCallback(const geometry_msgs::TwistStampedConstPtr &input_msg);
             void estopCallback(const std_msgs::BoolConstPtr& msg);
             void sendtovcs(message *msg);
-            void updateOdometry(const double vx, const double ang, const ros::Time &cur_time);
+            void updateOdometryByCurrVel(const double vx, const double ang, const ros::Time &cur_time);
+            void updateOdometryByWheelVel(const double vx, const double ang, const ros::Time &cur_time);
             void processRecvmsg(message *msg);
             double convertSteeringAngleToAngularVelocity(const double cvel,const double cang);
         public:

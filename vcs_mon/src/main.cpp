@@ -82,13 +82,13 @@ void printStatusBar(const vcs_mon::graph::ConstPtr& msg)
 {
     cvel = mps_to_kmh(msg->cvel);
     tvel = msg->tvel;
-	printBarGraph();
+    printBarGraph();
 }
 
 void scoreCallback(const vcs_mon::NDTStat::ConstPtr &msg)
 {
-	ndtscore = msg->score;
-	printBarGraph();
+    ndtscore = msg->score;
+    printBarGraph();
 }
 int main(int argc, char **argv)
 {

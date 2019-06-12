@@ -37,14 +37,14 @@ namespace vcsAgent
         
         if(msg->result_code == 0)
         { 
-            cout << "sendtovcs: seq_no "<<msg->seq_no<<endl;
-            cout << "sendtovcs: ack_no "<< msg->ack_no<<endl;
-            cout << "sendtovcs: cmd_code "<< msg->cmd_code<<endl;
-            cout << "sendtovcs: param_id "<< msg->param_id<<endl;
-            cout << "sendtovcs: param_val "<<msg->param_val<<endl;
-            cout << "sendtovcs: result_code "<< msg->result_code<<endl;
-            cout << "sendtovcs: result_msg " << msg->result_msg<<endl;
-            cout << "///////////////////"<<endl;
+            //cout << "send: seq_no "<<msg->seq_no<<endl;
+            //cout << "send: ack_no "<< msg->ack_no<<endl;
+            cout << "send: cmd_code "<< msg->cmd_code<<endl;
+            cout << "send: param_id "<< msg->param_id<<endl;
+            cout << "send: param_val "<<msg->param_val<<endl;
+            //cout << "send: result_code "<< msg->result_code<<endl;
+            cout << "send: result_msg " << msg->result_msg<<endl;
+            cout << endl;
 
             if ((bytecount = send(vcsd_sd,(char*)msg, sizeof(message), 0)) == -1)
             {   
@@ -227,13 +227,53 @@ namespace vcsAgent
 				tan(current_tire_angle) * cvel / wheel_base;
 			return current_angular_velocity;
 		}
-		void vAgent::updateOdometry(const double vx, const double ang, const ros::Time &cur_time)
+		void vAgent::updateOdometryByWheelVel(const double vL, const double vR, const ros::Time &cur_time)
+		{
+			static const int BASELINK_LEN = 1.78;
+			double dt = (cur_time - stamp).toSec();
+			if(dt>10.0){
+				dt = 0.01;
+			}
+			
+			double linear_cVelocity = (vR + vL) / 2;
+			double angular_cVelocity = (vR - vL) / BASELINK_LEN;
+
+			double delta_s = linear_cVelocity*dt; 
+			double delta_th = angular_cVelocity*dt; 
+			double delta_x = delta_s*cos(th + delta_th/2.0); 
+			double delta_y = delta_s*sin(th + delta_th/2.0);
+
+			x += delta_x;
+			y += delta_y;
+			th += delta_th;
+			//ROS_INFO("dt : %lf delta(x y th) : (%lf %lf %lf)", dt, delta_x, delta_y, delta_th);
+
+			stamp = cur_time;
+			geometry_msgs::Quaternion odom_quat = tf::createQuaternionMsgFromYaw(th);
+
+			nav_msgs::Odometry odom;
+			odom.header.stamp = Time::now();
+			odom.header.frame_id = "odom";
+
+			odom.pose.pose.position.x = x;
+			odom.pose.pose.position.y = y;
+			odom.pose.pose.position.z = 0.0;
+			odom.pose.pose.orientation = odom_quat;
+
+			odom.child_frame_id = "base_link";
+			odom.twist.twist.linear.x = linear_cVelocity;
+			odom.twist.twist.angular.z = angular_cVelocity;
+
+			odom_pub.publish(odom);
+		}
+
+		void vAgent::updateOdometryByCurrVel(const double vx, const double ang, const ros::Time &cur_time)
 		{
 			tf::TransformBroadcaster odom_broadcaster_;
 			//
 			static const double GwayAngle2SteeringAngle = 0.1055;
 			double cur_steering_angle = ang * GwayAngle2SteeringAngle;
-			std::cout << "vx, angle : " << vx << ' ' << cur_steering_angle << '\n';
+			//std::cout << "vx, angle : " << vx << ' ' << cur_steering_angle << '\n';
 			double vth = convertSteeringAngleToAngularVelocity(vx, cur_steering_angle);
 
 			double dt = (cur_time - stamp).toSec();
@@ -245,7 +285,7 @@ namespace vcsAgent
 			double delta_y = (vx * sin(th)) * dt;
 			double delta_th = vth * dt;
 
-			ROS_INFO("dt : %lf delta(x y th) : (%lf %lf %lf)", dt, delta_x, delta_y, delta_th);
+			//ROS_INFO("dt : %lf delta(x y th) : (%lf %lf %lf)", dt, delta_x, delta_y, delta_th);
 
 			x += delta_x;
 			y += delta_y;
@@ -253,7 +293,7 @@ namespace vcsAgent
 			stamp = cur_time;
 
 			geometry_msgs::Quaternion odom_quat = tf::createQuaternionMsgFromYaw(th);
-
+/*
 			geometry_msgs::TransformStamped odom_trans;
 			odom_trans.header.stamp = Time::now();
 			odom_trans.header.frame_id = "odom";
@@ -265,7 +305,7 @@ namespace vcsAgent
 			odom_trans.transform.rotation = odom_quat;
 
 			odom_broadcaster_.sendTransform(odom_trans);
-
+*/
 			nav_msgs::Odometry odom;
 			odom.header.stamp = Time::now();
 			odom.header.frame_id = "odom";
@@ -287,16 +327,24 @@ namespace vcsAgent
         vcs_agent::mon mon_val;
         // cout << "processRecvmsg: result_msg "<< msg->result_msg<<endl;
         // cout << "processRecvmsg: param_val "<< msg->param_val<<endl;
-        if(msg->param_id == 20) 
+	int id = msg->param_id;
+        if((id == 20) || (id == 22)) 
+	// can.actual_vel or obd.actual_vel
         {
             tmp_v = msg->param_val;
-            //printStatusBar(buffer[0], tmp_v);
             mon_val.tvel = buffer[0];
             mon_val.cvel = tmp_v;
             graph_pub.publish(mon_val);
+	    //updateOdometryByCurrVel(tmp_v, tmp_a, ros::Time::now());
         }
-        else if(msg->param_id == 21) tmp_a = msg->param_val;
-        updateOdometry(tmp_v, tmp_a, ros::Time::now());
+        else if((id == 21) || (id == 23)) tmp_a = msg->param_val;
+	// can.steer_ang or ecat.steer_ang
+        else if(id == 24) tmp_v_RL = msg->param_val; 
+        else if(id == 25) 
+	{
+		tmp_v_RR = msg->param_val;
+		updateOdometryByWheelVel(tmp_v_RL, tmp_v_RR, ros::Time::now());
+	}
     }
 
     int vAgent::MainLoop()
@@ -372,14 +420,14 @@ namespace vcsAgent
                         printf("Closed client: %d\n",evs[i].data.fd);
                     }
                     else{
-                        cout << "recvfromvcs: seq_no "<< read_buffer.seq_no<<endl;
-                        cout << "recvfromvcs: ack_no "<< read_buffer.ack_no<<endl;
-                        cout << "recvfromvcs: cmd_code "<<read_buffer.cmd_code<<endl;
-                        cout << "recvfromvcs: param_id "<< read_buffer.param_id<<endl;
-                        cout << "recvfromvcs: param_val "<< read_buffer.param_val<<endl;
-                        cout << "recvfromvcs: result_code "<< read_buffer.result_code<<endl;
-                        cout << "recvfromvcs: result_msg " << read_buffer.result_msg<<endl;
-                        cout << "///////////////////"<<endl;
+        //                cout << "recvfromvcs: seq_no "<< read_buffer.seq_no<<endl;
+        //                cout << "recvfromvcs: ack_no "<< read_buffer.ack_no<<endl;
+        //                cout << "recvfromvcs: cmd_code "<<read_buffer.cmd_code<<endl;
+        //                cout << "recvfromvcs: param_id "<< read_buffer.param_id<<endl;
+                        cout << "recv: param_val \t"<< read_buffer.param_val<<endl;
+                        cout << "recv: result_code \t"<< read_buffer.result_code<<endl;
+                        cout << "recv: result_msg \t" << read_buffer.result_msg<<endl;
+                        cout << endl;
                         if(read_buffer.cmd_code == 0)
                             processRecvmsg(&read_buffer);
                         vcs_ack.seq_no = read_buffer.seq_no;

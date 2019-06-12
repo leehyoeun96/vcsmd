@@ -4,22 +4,22 @@ op_common_params:
   enableStopSignBehavior: false
   enableSwerving: true
   enableTrafficLightBehavior: false
-  horizonDistance: 120.0
+  horizonDistance: 50.0
   horizontalSafetyDistance: 1.0
   maxAcceleration: 3.0
   maxDeceleration: -3.0
-  maxDistanceToAvoid: 4.0
-  maxLocalPlanDistance: 80.0
-  maxVelocity: 6.0
-  minDistanceToAvoid: 15.0
+  maxDistanceToAvoid: 20.0
+  maxLocalPlanDistance: 30.0
+  maxVelocity: 14.0
+  minDistanceToAvoid: 2.0
   minFollowingDistance: 30.0
   pathDensity: 0.5
-  rollOutDensity: 0.5
-  rollOutsNumber: 4
+  rollOutDensity: 0.8
+  rollOutsNumber: 12
   velocitySource: 1
-  verticalSafetyDistance: 1.0
+  verticalSafetyDistance: 0.5
 op_motion_predictor:
-  enableCurbObstacles: false
+  enableCurbObstacles: true
   enableGenrateBranches: false
   enableParticleFilterPrediction: false
   enableStepByStepSignal: false

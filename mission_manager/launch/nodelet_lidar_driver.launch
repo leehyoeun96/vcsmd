@@ -1,0 +1,37 @@
+<launch>
+    <node pkg="nodelet" type="nodelet" name="lidar_nodelet_manager" args="manager" output="screen"/>
+    
+    <rosparam param="frontend" file="$(find nodelet_lidar_driver)/cfg/nodelet_frontend_default.yaml"/>
+    <node pkg="nodelet" type="nodelet" args="standalone nodelet_lidar_driver/LidarNodeletFront" name="frontend" output="screen">
+        <rosparam file="$(find nodelet_lidar_driver)/cfg/nodelet_frontend_default.yaml"/>
+    </node>	 
+    
+    <rosparam param="midend_front" file="$(find nodelet_lidar_driver)/cfg/nodelet_midend_default_1.yaml"/>
+    <rosparam param="midend_front" file="$(find nodelet_lidar_driver)/cfg/nodelet_midend_backend_combine.yaml"/>
+    <node pkg="nodelet" type="nodelet" args="load nodelet_lidar_driver/LidarNodeletMid lidar_nodelet_manager" name="midend_front" output="screen">
+        <rosparam file="$(find nodelet_lidar_driver)/cfg/nodelet_midend_default_1.yaml"/>
+        <rosparam file="$(find nodelet_lidar_driver)/cfg/nodelet_midend_backend_combine.yaml"/>
+    </node>		  
+    
+    <rosparam param="midend_left" file="$(find nodelet_lidar_driver)/cfg/nodelet_midend_default_2.yaml"/>
+    <rosparam param="midend_left" file="$(find nodelet_lidar_driver)/cfg/nodelet_midend_backend_combine.yaml"/>
+    <node pkg="nodelet" type="nodelet" args="load nodelet_lidar_driver/LidarNodeletMid lidar_nodelet_manager" name="midend_left" output="screen">
+        <rosparam file="$(find nodelet_lidar_driver)/cfg/nodelet_midend_default_2.yaml"/>
+        <rosparam file="$(find nodelet_lidar_driver)/cfg/nodelet_midend_backend_combine.yaml"/>
+    </node>	
+    
+    <rosparam param="midend_right" file="$(find nodelet_lidar_driver)/cfg/nodelet_midend_default_3.yaml"/>
+    <rosparam param="midend_right" file="$(find nodelet_lidar_driver)/cfg/nodelet_midend_backend_combine.yaml"/>
+    <node pkg="nodelet" type="nodelet" args="load nodelet_lidar_driver/LidarNodeletMid lidar_nodelet_manager" name="midend_right" output="screen">
+        <rosparam file="$(find nodelet_lidar_driver)/cfg/nodelet_midend_default_3.yaml"/>
+        <rosparam file="$(find nodelet_lidar_driver)/cfg/nodelet_midend_backend_combine.yaml"/>
+    </node>		
+    
+    <!--<rosparam param="backend" file="$(find nodelet_lidar_driver)/cfg/nodelet_backend_default.yaml"/>
+    <rosparam param="backend" file="$(find nodelet_lidar_driver)/cfg/nodelet_midend_backend_combine.yaml"/>
+    <node pkg="nodelet" type="nodelet" args="standalone nodelet_lidar_driver/LidarNodeletBack" name="backend" output="screen">
+        <rosparam file="$(find nodelet_lidar_driver)/cfg/nodelet_backend_default.yaml"/>
+        <rosparam file="$(find nodelet_lidar_driver)/cfg/nodelet_midend_backend_combine.yaml"/>
+    </node>		 -->
+    
+</launch>

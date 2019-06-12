@@ -1,0 +1,81 @@
+<launch>
+
+  <!-- Setup Virtual Frame -->
+  <include file="$(find runtime_manager)/scripts/setup_tf.launch">
+    <arg name="x" value="0.713" />
+    <arg name="y" value="0.0" />
+    <arg name="z" value="1.87615" />
+    <arg name="yaw" value="0.0" />
+    <arg name="pitch" value="0.0" />
+    <arg name="roll" value="0.0" />
+    <arg name="frame_id" value="/base_link" />
+    <arg name="child_frame_id" value="/velodyne" />
+    <arg name="period_in_ms" value="10"/>
+    <arg name="base_link_to_localizer" value="virtual_frame_base_link_to_localizer" />
+  </include>
+
+  <!-- Setup front sensor Frame -->
+  <include file="$(find runtime_manager)/scripts/setup_tf.launch">
+    <arg name="x" value="0.0" />
+    <arg name="y" value="0.0" />
+    <arg name="z" value="0.0" />
+    <arg name="yaw" value="0.0" />
+    <arg name="pitch" value="0.0" />
+    <arg name="roll" value="0.0" />
+    <arg name="frame_id" value="/velodyne" />
+    <arg name="child_frame_id" value="/velodyne_front" />
+    <arg name="period_in_ms" value="10"/>
+    <arg name="base_link_to_localizer" value="btl1" />
+  </include>
+
+  <!-- Setup left sensor Frame -->
+  <include file="$(find runtime_manager)/scripts/setup_tf.launch">
+    <arg name="x" value="0.0" />
+    <arg name="y" value="0.59214" />
+    <arg name="z" value="-0.19752" />
+    <arg name="yaw" value="1.57079" />
+    <arg name="pitch" value="0.0" />
+    <arg name="roll" value="0.0" />
+    <arg name="frame_id" value="/velodyne" />
+    <arg name="child_frame_id" value="/velodyne_left" />
+    <arg name="period_in_ms" value="10"/>
+    <arg name="base_link_to_localizer" value="btl3" />
+  </include>
+
+  <!-- Setup right sensor Frame -->
+  <include file="$(find runtime_manager)/scripts/setup_tf.launch">
+    <arg name="x" value="0.0" />
+    <arg name="y" value="-0.59214" />
+    <arg name="z" value="-0.19752" />
+    <arg name="yaw" value="-1.57079" />
+    <arg name="pitch" value="0.0" />
+    <arg name="roll" value="0.0" />
+    <arg name="frame_id" value="/velodyne" />
+    <arg name="child_frame_id" value="/velodyne_right" />
+    <arg name="period_in_ms" value="10"/>
+    <arg name="base_link_to_localizer" value="btl4" />
+  </include>
+
+  <include file="$(find model_publisher)/launch/vehicle_model.launch" />
+ 
+  <!-- lidar_driver -->
+  <include file="$(find nodelet_lidar_driver)/launch/nodelet_lidar_driver.launch"/>
+
+  <!-- xsens_driver
+  <include file="$(find xsens_mti_driver)/launch/xsens_mti_driver.launch"/> -->
+
+  <!-- fix2gnsspose -->
+  <include file="$(find fix2gnsspose)/launch/soongsil.launch"/>
+
+  <!-- points_downsampler -->
+  <include file="$(find points_downsampler)/launch/points_downsample.launch"/>
+
+  <!-- startpose_setter -->
+  <include file="$(find startpos_setter)/launch/startpos_setter.launch"/>
+
+  <!-- ndt_matching
+  <include file="$(find lidar_localizer)/launch/ndt_matching.launch">
+    <arg name="use_gnss" value="0" />
+  </include> -->
+
+</launch>
